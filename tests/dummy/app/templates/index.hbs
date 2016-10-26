@@ -1,0 +1,13 @@
+<div>
+  Test message - we can add drop wells here
+</div>
+
+{{!-- Insert helpful comment here --}}
+{{#karbon-sortable-list onOrderChanged='orderChanged' dropWellClass='dropwell'}}
+  {{#each model as |item|}}
+    {{!-- defaults tagName=li, handleClass=droppable --}}
+    {{#karbon-sortable-item}}
+      <div class='list-item'>{{item}}</div>
+    {{/karbon-sortable-item}}
+  {{/each}}
+{{/karbon-sortable-list}}

@@ -1,0 +1,1 @@
+export { default } from 'karbon-sortable/components/karbon-sortable-list';

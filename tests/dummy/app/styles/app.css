@@ -1,0 +1,56 @@
+body {
+  margin: 18px;
+  padding: 0;
+  font-family: "Segoe UI", "Open Sans", serif;
+  color: #444;
+}
+
+.karbon-sortable-list li {
+  list-style: none;
+}
+
+.list-item {
+  text-align: center;
+  width: 380px;
+  border-top: 2px solid #fff;
+  margin: 0;
+  padding: 8px;
+  color: #fff;
+  background-color: #bbb;
+}
+
+.list-item:hover {
+  cursor: move;
+}
+
+.dragging > .list-item {
+  border-color: rgba( 255, 255, 255, 0);
+  background-color: rgba( 33, 190, 150, 0.6);
+}
+
+.dropping > .list-item {
+  transition: all 1s ease-out;
+  opacity: 1;
+  background-color: #bbb;
+  border-top: 2px solid #fff;
+}
+
+.droppable--enter > .list-item {
+  border-top: 2px solid #3aa;
+}
+
+li.list-item__blank {
+  list-style: none;
+  height: 39px;
+  width: 380px;
+  border-top: 2px solid #fff;
+  margin: 0;
+  padding: 8px;
+  color: #fff;
+  background-color: #fff;
+}
+
+
+li.list-item__blank.droppable--enter {
+  border-top: 2px solid #3aa;
+}
