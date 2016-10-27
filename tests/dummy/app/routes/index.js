@@ -27,7 +27,17 @@ const items = [
 
 export default Ember.Route.extend({
   model: function() {
-    return items;
+    const mockModels = Ember.A();
+
+    items.forEach( (item) => {
+      const mockItem = this.store.createRecord('mock-item', {
+        title: item
+      });
+
+      mockModels.push(mockItem);
+    });
+
+    return mockModels;
   }
 });
 

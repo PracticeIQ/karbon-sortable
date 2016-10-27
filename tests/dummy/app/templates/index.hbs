@@ -2,12 +2,19 @@
   Test message - we can add drop wells here
 </div>
 
-{{!-- Insert helpful comment here --}}
-{{#karbon-sortable-list onOrderChanged='orderChanged' dropWellClass='dropwell'}}
+{{!-- containerClass gives you a namespace for this list. You can use multiple lists by
+      giving them different container names.
+
+      onOrderChanged will fire after a drop, passing oldIndex and newIndex of the item
+      that was moved.
+
+--}}
+{{#karbon-sortable-list data=model
+                        containerClass='demo-list'
+                        onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}
-    {{!-- defaults tagName=li, handleClass=droppable --}}
     {{#karbon-sortable-item}}
-      <div class='list-item'>{{item}}</div>
+      <div class='list-item'>{{item.title}}</div>
     {{/karbon-sortable-item}}
   {{/each}}
 {{/karbon-sortable-list}}

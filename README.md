@@ -1,6 +1,24 @@
 # Karbon-sortable
 
-This README outlines the details of collaborating on this Ember addon.
+An addon for sortable items. Items within the list can be sorted via
+dragging and dropping them into a new position. You can also identify
+external drop targets for non-sorting actions.
+
+## Features and Limitations
+
+Drag and drop is implemented via HTML5, so it will not work in older
+browsers or mobile. But for modern browsers it scales well even with
+very long lists.
+
+This addon has no styling to allow maximum customization. Instead, it
+relies on setting and removing class names and firing events when certain
+actions occur. The test app includes styling for demonstration that
+you can use as a starting point.
+
+##
+
+
+
 
 ## Installation
 
@@ -23,4 +41,4 @@ This README outlines the details of collaborating on this Ember addon.
 
 * `ember build`
 
-For more information on using ember-cli, visit [http://ember-cli.com/](http://ember-cli.com/).
+## 

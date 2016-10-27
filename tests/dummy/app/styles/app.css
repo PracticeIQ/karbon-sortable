@@ -7,47 +7,48 @@ body {
 
 .karbon-sortable-list li {
   list-style: none;
+  width: 400px;
+  background-color: white;
 }
 
 .list-item {
   text-align: center;
-  width: 380px;
+  width: 400px;
   border-top: 2px solid #fff;
   margin: 0;
   padding: 8px;
-  color: #fff;
-  background-color: #bbb;
+  color: white;
+  background-color: green;
 }
 
 .list-item:hover {
-  cursor: move;
+  cursor: pointer;
 }
 
 .dragging > .list-item {
-  border-color: rgba( 255, 255, 255, 0);
-  background-color: rgba( 33, 190, 150, 0.6);
+  background-color: gray;
+  border-color: white;
 }
 
 .dropping > .list-item {
   transition: all 1s ease-out;
-  opacity: 1;
-  background-color: #bbb;
-  border-top: 2px solid #fff;
+  background-color: green;
+  border-top: 2px solid white;
 }
 
 .droppable--enter > .list-item {
-  border-top: 2px solid #3aa;
+  border-top: 2px solid #3aa3aa;
 }
 
 li.list-item__blank {
   list-style: none;
   height: 39px;
   width: 380px;
-  border-top: 2px solid #fff;
+  border-top: 2px solid white;
   margin: 0;
   padding: 8px;
-  color: #fff;
-  background-color: #fff;
+  color: white;
+  background-color: white;
 }
 
 
