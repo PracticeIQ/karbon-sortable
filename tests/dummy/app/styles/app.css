@@ -29,13 +29,17 @@ body {
   border-color: white;
 }
 
-li.nested-highlight {
-  margin-left: 54px;
+/* applied to a dragging item that will be nested */
+li.nesting {
+  margin-left: 60px;
   width: 240px;
 }
 
+/* an item that has been dropped and is nested. Should
+ * not coincide with li.nesting
+ */
 li.nested {
-  margin-left: 54px;
+  margin-left: 60px;
   width: 240px;
 }
 
@@ -48,7 +52,7 @@ li.nested {
 }
 
 .droppable--enter > .list-item {
-  border-top: 2px solid #3aa3aa;
+  background-color: #3aa3aa;
 }
 
 li.list-item__blank {

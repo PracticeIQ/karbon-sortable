@@ -86,11 +86,11 @@ export default Ember.Component.extend({
 
             if (deltaX < (-1 * nestTolerance)) {
               // outdent
-              droppable.removeClass('nested-hightlight');
+              droppable.removeClass('nested');
               this.set('_indented', false);
             } else if (deltaX > nestTolerance || indented) {
               // indent
-              droppable.addClass('nested-highlight');
+              droppable.addClass('nested');
             }
             // else leave unchanged
           }
@@ -105,7 +105,7 @@ export default Ember.Component.extend({
       if (droppable.length === 1) {
         droppable.removeClass('droppable--enter');
         if (this.get('canNest')) {
-          droppable.removeClass('nested-highlight');
+          droppable.removeClass('nested');
         }
       }
     });
@@ -115,25 +115,30 @@ export default Ember.Component.extend({
 
       const item = Ember.$(event.target);
       const droppable = item.closest('.droppable--enter');
+      let isChild = false;
+      let isSame = false;
 
       if (droppable.length === 1) {
         const dragged = this.get('_draggedEl');
 
         // need a better equality test
         if (dragged.id === droppable[0].id) {
-          droppable.removeClass('droppable--enter');
-          return;
+          isSame = true;
         }
 
         if (this.get('canNest')) {
           const screenX = this.get('_screenX');
+          const indented = this.get('_indented');
           const newScreenX = event.originalEvent.screenX;
           const deltaX = newScreenX - screenX;
           const nestTolerance = this.get('nestTolerance');
 
-          if (deltaX > nestTolerance) {
+          console.log('DROP deltaX: ', deltaX);
+
+          if (deltaX > nestTolerance || indented) {
             // indent
             dragged.classList.add('nested');
+            isChild = true;
           } else if (deltaX < (-1 * nestTolerance)) {
             // outdent
             dragged.classList.remove('nested');
@@ -141,7 +146,7 @@ export default Ember.Component.extend({
           // else leave unchanged
 
           // always remove the highlight
-          droppable.removeClass('nested-highlight');
+          // droppable.removeClass('nested');
         }
 
         const parentN = dragged.parentNode;
@@ -152,28 +157,26 @@ export default Ember.Component.extend({
         droppable.removeClass('droppable--enter');
 
         // have to move the elements to get the transitions to fire
-        parentN.removeChild(dragged);
-        Ember.$(dragged).insertBefore(droppable[0]);
+        if (!isSame) {
+          parentN.removeChild(dragged);
+        }
+
+        if (!isSame) {
+          Ember.$(dragged).insertBefore(droppable[0]);
+        }
 
         const newIndex = Ember.$(dragged).index();
 
-//        const newIndex = Ember.$(droppable).index();
-
         // Move the data, have to keep the list in sync
-        Ember.run.later( () => {
-          data.removeAt(oldIndex);
-          data.insertAt(newIndex, dataItem);
-        }, 1000); // timer has to equal transition ease out
+        if (!isSame) {
+          Ember.run.later( () => {
+            data.removeAt(oldIndex);
+            data.insertAt(newIndex, dataItem);
+          }, 1000); // timer has to equal transition ease out
+        }
 
-        this.get('onOrderChanged')(dataItem, oldIndex, newIndex);
+        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
       }
-
-/*
-      if (event.target.classList.contains('dropwell')) {
-        alert('dropped');
-        event.target.style.opacity = '';
-      }
-*/
     });
 
     // append the blank to allow dragging items to the bottom
