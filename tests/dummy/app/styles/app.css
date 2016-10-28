@@ -29,21 +29,15 @@ body {
   border-color: white;
 }
 
-/* applied to a dragging item that will be nested */
 li.nesting {
   margin-left: 60px;
   width: 240px;
 }
 
-/* an item that has been dropped and is nested. Should
- * not coincide with li.nesting
- */
 li.nested {
   margin-left: 60px;
   width: 240px;
 }
-
-
 
 .dropping > .list-item {
   transition: all 1s ease-out;

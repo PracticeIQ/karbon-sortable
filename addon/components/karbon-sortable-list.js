@@ -86,11 +86,11 @@ export default Ember.Component.extend({
 
             if (deltaX < (-1 * nestTolerance)) {
               // outdent
-              droppable.removeClass('nested');
+              droppable.removeClass('nesting');
               this.set('_indented', false);
             } else if (deltaX > nestTolerance || indented) {
               // indent
-              droppable.addClass('nested');
+              droppable.addClass('nesting');
             }
             // else leave unchanged
           }
@@ -105,7 +105,8 @@ export default Ember.Component.extend({
       if (droppable.length === 1) {
         droppable.removeClass('droppable--enter');
         if (this.get('canNest')) {
-          droppable.removeClass('nested');
+          // *** need to know if it was nested before hand...don't remove if it was
+          droppable.removeClass('nesting');
         }
       }
     });
@@ -133,8 +134,6 @@ export default Ember.Component.extend({
           const deltaX = newScreenX - screenX;
           const nestTolerance = this.get('nestTolerance');
 
-          console.log('DROP deltaX: ', deltaX);
-
           if (deltaX > nestTolerance || indented) {
             // indent
             dragged.classList.add('nested');
@@ -146,7 +145,10 @@ export default Ember.Component.extend({
           // else leave unchanged
 
           // always remove the highlight
-          // droppable.removeClass('nested');
+          if (!isSame) {
+            // *** need to know if it was nested beforehand...don't remove if it was
+            droppable.removeClass('nesting');
+          }
         }
 
         const parentN = dragged.parentNode;
