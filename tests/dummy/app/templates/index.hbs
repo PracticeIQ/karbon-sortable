@@ -10,12 +10,12 @@
 
 --}}
 {{#karbon-sortable-list data=model
-                        canNest=true
+                        canNest=false
                         containerClass='demo-list'
                         onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}
-    {{#karbon-sortable-item}}
-      <div class='list-item'>{{item.title}}</div>
+    {{#karbon-sortable-item draggable=item.draggable}}
+      {{expandable-item data=item}}
     {{/karbon-sortable-item}}
   {{/each}}
 {{/karbon-sortable-list}}

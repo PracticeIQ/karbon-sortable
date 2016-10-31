@@ -7,7 +7,6 @@ import layout from '../templates/components/karbon-sortable-list';
  * external drop targets for non-sorting actions.
  */
 
-
 export default Ember.Component.extend({
   tagName: 'ul',
   classNames: ['karbon-sortable-list'],
@@ -24,6 +23,10 @@ export default Ember.Component.extend({
   // Whether the currently dragged item is already indented
   _indented: null,
 
+  _isParent: function(node) {
+    return (Ember.$(node).next().hasClass('nested'));
+  },
+
   didInsertElement() {
     this.$().on('dragstart.karbonsortable', (event) => {
       event.dataTransfer.effectAllowed = 'move';
@@ -31,15 +34,19 @@ export default Ember.Component.extend({
 
       this.set('_draggedEl', event.target);
       if (this.get('canNest')) {
-        // alway reset the screenX when starting a drag, it will be used as the
-        // basis for detecting deltaX
-        this.set('_screenX', null);
 
-        // check to see if the item to drag is already indented
-        if (event.target.classList.contains('nested')) {
-          this.set('_indented', true);
+        if (this._isParent(event.target)) {
         } else {
-          this.set('_indented', false);
+          // alway reset the screenX when starting a drag, it will be used as the
+          // basis for detecting deltaX
+          this.set('_screenX', null);
+
+          // check to see if the item to drag is already indented
+          if (event.target.classList.contains('nested')) {
+            this.set('_indented', true);
+          } else {
+            this.set('_indented', false);
+          }
         }
       }
 
@@ -120,6 +127,8 @@ export default Ember.Component.extend({
       let isSame = false;
 
       if (droppable.length === 1) {
+        let newIndex = Ember.$(droppable).index();
+
         const dragged = this.get('_draggedEl');
 
         // need a better equality test
@@ -158,34 +167,16 @@ export default Ember.Component.extend({
 
         droppable.removeClass('droppable--enter');
 
-        // have to move the elements to get the transitions to fire
-        if (!isSame) {
-          parentN.removeChild(dragged);
-        }
-
-        if (!isSame) {
-          Ember.$(dragged).insertBefore(droppable[0]);
-        }
-
-        const newIndex = Ember.$(dragged).index();
-
         // Move the data, have to keep the list in sync
         if (!isSame) {
-          Ember.run.later( () => {
-            data.removeAt(oldIndex);
-            data.insertAt(newIndex, dataItem);
-          }, 1000); // timer has to equal transition ease out
+          data.removeAt(oldIndex);
+          data.insertAt(newIndex, dataItem);
+
+          this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
         }
 
-        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
       }
     });
-
-    // append the blank to allow dragging items to the bottom
-    let blank = document.createElement('li');
-    blank.classList.add('list-item__blank');
-    blank.classList.add('droppable');
-    this.$().append(blank);
   },
 
   willDestroyElement() {

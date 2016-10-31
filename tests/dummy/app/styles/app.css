@@ -24,7 +24,7 @@ body {
   cursor: pointer;
 }
 
-.dragging > .list-item {
+.dragging  .list-item {
   background-color: gray;
   border-color: white;
 }
@@ -39,28 +39,23 @@ li.nested {
   width: 240px;
 }
 
-.dropping > .list-item {
+.dropping  .list-item {
   transition: all 1s ease-out;
   background-color: green;
   border-top: 2px solid white;
 }
 
-.droppable--enter > .list-item {
+.droppable--enter .list-item {
   background-color: #3aa3aa;
 }
 
-li.list-item__blank {
-  list-style: none;
-  height: 39px;
-  width: 380px;
-  border-top: 2px solid white;
-  margin: 0;
-  padding: 8px;
+
+
+.expandable-item.expanded {
+  background-color: black;
   color: white;
-  background-color: white;
-}
-
-
-li.list-item__blank.droppable--enter {
-  border-top: 2px solid #3aa;
+  height: 60px;
+  text-align: center;
+  padding-top: 20px;
+  border-top: 2px solid white;
 }

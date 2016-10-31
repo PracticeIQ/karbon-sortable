@@ -7,6 +7,10 @@ export default Ember.Controller.extend({
                   ' old: ', oldIndex,
                   ' new: ', newIndex,
                   ' isChild: ', isChild);
+
+      this.get('model').forEach( (item, index) => {
+        console.log(`${index}: ${item.get('title')}`);
+      });
     }
   }
 });
