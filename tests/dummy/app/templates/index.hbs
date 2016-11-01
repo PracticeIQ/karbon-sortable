@@ -10,7 +10,7 @@
 
 --}}
 {{#karbon-sortable-list data=model
-                        canNest=false
+                        canNest=true
                         containerClass='demo-list'
                         onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}

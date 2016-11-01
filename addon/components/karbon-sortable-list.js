@@ -20,8 +20,6 @@ export default Ember.Component.extend({
   _draggedEl: null,
   // The initial screenX position at the beginning of a drag
   _screenX: null,
-  // Whether the currently dragged item is already indented
-  _indented: null,
 
   _isParent: function(node) {
     return (Ember.$(node).next().hasClass('nested'));
@@ -40,13 +38,6 @@ export default Ember.Component.extend({
           // alway reset the screenX when starting a drag, it will be used as the
           // basis for detecting deltaX
           this.set('_screenX', null);
-
-          // check to see if the item to drag is already indented
-          if (event.target.classList.contains('nested')) {
-            this.set('_indented', true);
-          } else {
-            this.set('_indented', false);
-          }
         }
       }
 
@@ -79,11 +70,15 @@ export default Ember.Component.extend({
       if (this.get('canNest')) {
         const item = Ember.$(event.target);
         const droppable = item.closest('.droppable');
+        const dragged = this.get('_draggedEl');
+
 
         if (droppable.length === 1) {
+          const index = Ember.$(droppable).index();
+          const isChild = this.get('data').objectAt(index).get('isChild');
+
           const screenX = this.get('_screenX');
           const newScreenX = event.originalEvent.screenX;
-          const indented = this.get('_indented');
 
           if (!screenX) {
             this.set('_screenX', newScreenX);
@@ -94,15 +89,18 @@ export default Ember.Component.extend({
             if (deltaX < (-1 * nestTolerance)) {
               // outdent
               droppable.removeClass('nesting');
-              this.set('_indented', false);
-            } else if (deltaX > nestTolerance || indented) {
+              console.log('outdent isChild: ', isChild);
+              if (isChild) {
+                droppable.removeClass('nested');
+              }
+            } else if (deltaX > nestTolerance) {
               // indent
               droppable.addClass('nesting');
             }
-            // else leave unchanged
           }
         }
       }
+
     });
 
     this.$().on('dragleave.karbonsortable', (event) => {
@@ -112,8 +110,13 @@ export default Ember.Component.extend({
       if (droppable.length === 1) {
         droppable.removeClass('droppable--enter');
         if (this.get('canNest')) {
-          // *** need to know if it was nested before hand...don't remove if it was
+          const index = Ember.$(droppable).index();
+          const isChild = this.get('data').objectAt(index).get('isChild');
+
           droppable.removeClass('nesting');
+          if (isChild) {
+            droppable.addClass('nested');
+          }
         }
       }
     });
@@ -138,26 +141,23 @@ export default Ember.Component.extend({
 
         if (this.get('canNest')) {
           const screenX = this.get('_screenX');
-          const indented = this.get('_indented');
           const newScreenX = event.originalEvent.screenX;
           const deltaX = newScreenX - screenX;
           const nestTolerance = this.get('nestTolerance');
 
-          if (deltaX > nestTolerance || indented) {
+          if (deltaX > nestTolerance || droppable.hasClass('nesting')) {
             // indent
             dragged.classList.add('nested');
             isChild = true;
           } else if (deltaX < (-1 * nestTolerance)) {
             // outdent
             dragged.classList.remove('nested');
+          } else if (this.get('data').objectAt(newIndex).get('isChild')) {
+            droppable.addClass('nested');
+            isChild = true;
           }
-          // else leave unchanged
 
-          // always remove the highlight
-          if (!isSame) {
-            // *** need to know if it was nested beforehand...don't remove if it was
-            droppable.removeClass('nesting');
-          }
+          droppable.removeClass('nesting');
         }
 
         const parentN = dragged.parentNode;
@@ -171,10 +171,11 @@ export default Ember.Component.extend({
         if (!isSame) {
           data.removeAt(oldIndex);
           data.insertAt(newIndex, dataItem);
-
-          this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
         }
 
+        dataItem.set('isChild', isChild);
+
+        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
       }
     });
   },
