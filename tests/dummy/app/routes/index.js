@@ -7,8 +7,7 @@ const items = [
     'mango',
     'lemon',
     'orange',
-    'dwarf'];
-    /*
+    'dwarf',
     'gnome',
     'troll',
     'weasel',
@@ -23,10 +22,21 @@ const items = [
     'zirconium',
     'knoxberry',
     'tensor',
-    'carbon'
-
+    'carbon',
+    'Alabama',
+    'Alaska',
+    'Arizona',
+    'Arkansas',
+    'California',
+    'Colorado',
+    'Connecticut',
+    'Delaware',
+    'Georgia',
+    'Hawaii',
+    'Idaho',
+    'Illinois',
+    'Indiana'
 ];
-    */
 
 export default Ember.Route.extend({
   model: function() {

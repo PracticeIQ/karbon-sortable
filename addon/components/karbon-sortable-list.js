@@ -13,6 +13,7 @@ export default Ember.Component.extend({
   classNameBindings: ['containerClass'],
 
   layout,
+  // is the nesting feature enabled or not
   canNest: false,
   nestTolerance: 60,
 
@@ -21,9 +22,53 @@ export default Ember.Component.extend({
   // The initial screenX position at the beginning of a drag
   _screenX: null,
 
-  _isParent: function(node) {
-    return (Ember.$(node).next().hasClass('nested'));
+  // We enable/disable nesting during certain operations, regardless
+  // of the canNest user setting
+  _nestingEnabled: true,
+
+  // When dragging parents and children, keep the data here
+  _dragGroup: null,
+
+  _getChildren: function(node) {
+    let children = [];
+    const data = this.get('data');
+    const index = Ember.$(node).index();
+
+
+    console.log('getChildren for: ', data.objectAt(index).get('title'),
+                ' isChild: ', data.objectAt(index).get('isChild'));
+
+    // we must not be a child
+    if (data.objectAt(index).get('isChild')) {
+      return [];
+    }
+
+    // must have at least one item below us
+    if (index < (data.get('length') - 1)) {
+
+      let nextPos = index + 1;
+      let nextNode = Ember.$(node).next();
+      let nextData = data.objectAt(nextPos);
+
+      while (nextData.get('isChild')) {
+        children.push(nextNode);
+        nextNode = Ember.$(nextNode).next();
+        nextPos++;
+        if (nextPos >= data.get('length')) {
+          break;
+        }
+        nextData = data.objectAt(nextPos);
+      }
+    }
+
+    console.log('hasChildren: ', children.length);
+
+    return children;
   },
+
+  nestingAllowed: Ember.computed('canNest', '_nestingEnabled', function() {
+    return this.get('canNest') && this.get('_nestingEnabled');
+  }),
 
   didInsertElement() {
     this.$().on('dragstart.karbonsortable', (event) => {
@@ -31,9 +76,24 @@ export default Ember.Component.extend({
       event.dataTransfer.dropEffect = 'move';
 
       this.set('_draggedEl', event.target);
-      if (this.get('canNest')) {
+      if (this.get('nestingAllowed')) {
+        let children = this._getChildren(event.target);
+        if (children.length > 0) {
+          // We are dragging a group, so normal nesting rules do not apply
+          this.set('_nestingEnabled', false);
 
-        if (this._isParent(event.target)) {
+          Ember.$(event.target).removeClass('droppable');
+
+          children.forEach( (child) => {
+            let childEl = Ember.$(child);
+            childEl.addClass('dragging');
+            childEl.removeClass('droppable');
+          });
+
+          event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 25, 25);
+
+          this.set('_dragGroup', children);
+
         } else {
           // alway reset the screenX when starting a drag, it will be used as the
           // basis for detecting deltaX
@@ -52,6 +112,19 @@ export default Ember.Component.extend({
               event.target.classList.remove('dropping');
           }, 1000);
       }
+
+      const children = this.get('_dragGroup');
+      Ember.run.later( () => {
+        if (children) {
+          children.forEach( (child) => {
+            let childEl = Ember.$(child);
+            childEl.removeClass('dragging');
+            childEl.addClass('droppable');
+          });
+        }
+      }, 200);
+
+      this.set('_nestingEnabled', true);
     });
 
     this.$().on('dragenter.karbonsortable', (event) => {
@@ -67,13 +140,18 @@ export default Ember.Component.extend({
       // prevent default to allow drop
       event.preventDefault();
 
-      if (this.get('canNest')) {
+      if (this.get('nestingAllowed')) {
         const item = Ember.$(event.target);
         const droppable = item.closest('.droppable');
         const dragged = this.get('_draggedEl');
 
+        let isSame = false;
 
-        if (droppable.length === 1) {
+        if (dragged && droppable.length && (dragged.id === droppable[0].id)) {
+          isSame = true;
+        }
+
+        if (droppable.length === 1 && isSame) {
           const index = Ember.$(droppable).index();
           const isChild = this.get('data').objectAt(index).get('isChild');
 
@@ -89,7 +167,6 @@ export default Ember.Component.extend({
             if (deltaX < (-1 * nestTolerance)) {
               // outdent
               droppable.removeClass('nesting');
-              console.log('outdent isChild: ', isChild);
               if (isChild) {
                 droppable.removeClass('nested');
               }
@@ -109,7 +186,7 @@ export default Ember.Component.extend({
 
       if (droppable.length === 1) {
         droppable.removeClass('droppable--enter');
-        if (this.get('canNest')) {
+        if (this.get('nestingAllowed')) {
           const index = Ember.$(droppable).index();
           const isChild = this.get('data').objectAt(index).get('isChild');
 
@@ -139,7 +216,9 @@ export default Ember.Component.extend({
           isSame = true;
         }
 
-        if (this.get('canNest')) {
+
+        // nesting will not be allowed if the drop is for a parent
+        if (this.get('nestingAllowed')) {
           const screenX = this.get('_screenX');
           const newScreenX = event.originalEvent.screenX;
           const deltaX = newScreenX - screenX;
@@ -154,7 +233,7 @@ export default Ember.Component.extend({
             dragged.classList.remove('nested');
           }
 
-          if (this.get('data').objectAt(newIndex).get('isChild')) {
+          if (!isSame && this.get('data').objectAt(newIndex).get('isChild')) {
             droppable.addClass('nested');
           }
 
@@ -168,11 +247,46 @@ export default Ember.Component.extend({
 
         droppable.removeClass('droppable--enter');
 
+        const children = this.get('_dragGroup');
+
         // Move the data, have to keep the list in sync
         if (!isSame) {
           data.removeAt(oldIndex);
           data.insertAt(newIndex, dataItem);
+
+          if (children) {
+            // dragging down
+            if (newIndex > oldIndex) {
+              for (let i = 1; i <= children.length; i++) {
+                let child = data.objectAt(oldIndex);
+
+                data.removeAt(oldIndex);
+                data.insertAt(newIndex, child);
+              }
+            } else {
+              // dragging up
+              for (let i = 1; i <= children.length; i++) {
+                let child = data.objectAt(oldIndex + i);
+
+                data.removeAt(oldIndex + i);
+                data.insertAt(newIndex + i, child);
+              }
+            }
+
+            Ember.run.later( () => {
+              if (children) {
+                children.forEach( (child) => {
+                  let childEl = Ember.$(child);
+                  childEl.removeClass('dragging');
+                  childEl.addClass('droppable');
+                });
+              }
+            }, 200);
+
+          }
         }
+
+        this.set('_dragGroup', null);
 
         dataItem.set('isChild', isChild);
 
