@@ -107,6 +107,7 @@ export default Ember.Component.extend({
     this.$().on('dragend.karbonsortable', (event) => {
       if (event.dataTransfer.dropEffect) {
           event.target.classList.add('dropping');
+          event.target.classList.add('droppable');
           Ember.run.later( () => {
               event.target.classList.remove('dragging');
               event.target.classList.remove('dropping');
@@ -240,7 +241,6 @@ export default Ember.Component.extend({
           droppable.removeClass('nesting');
         }
 
-        const parentN = dragged.parentNode;
         const oldIndex = Ember.$(dragged).index();
         const data = this.get('data');
         const dataItem = data.objectAt(oldIndex);
