@@ -152,9 +152,10 @@ export default Ember.Component.extend({
           } else if (deltaX < (-1 * nestTolerance)) {
             // outdent
             dragged.classList.remove('nested');
-          } else if (this.get('data').objectAt(newIndex).get('isChild')) {
+          }
+
+          if (this.get('data').objectAt(newIndex).get('isChild')) {
             droppable.addClass('nested');
-            isChild = true;
           }
 
           droppable.removeClass('nesting');
