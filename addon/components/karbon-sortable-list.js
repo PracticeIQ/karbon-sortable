@@ -34,10 +34,6 @@ export default Ember.Component.extend({
     const data = this.get('data');
     const index = Ember.$(node).index();
 
-
-    console.log('getChildren for: ', data.objectAt(index).get('title'),
-                ' isChild: ', data.objectAt(index).get('isChild'));
-
     // we must not be a child
     if (data.objectAt(index).get('isChild')) {
       return [];
@@ -60,8 +56,6 @@ export default Ember.Component.extend({
         nextData = data.objectAt(nextPos);
       }
     }
-
-    console.log('hasChildren: ', children.length);
 
     return children;
   },
