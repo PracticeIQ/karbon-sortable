@@ -72,7 +72,7 @@ export default Ember.Component.extend({
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         let children = this._getChildren(event.target);
-        if (children.length > 0) {
+        if (children.length > 0 && event.altKey) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
 
@@ -219,13 +219,16 @@ export default Ember.Component.extend({
           const deltaX = newScreenX - screenX;
           const nestTolerance = this.get('nestTolerance');
 
-          if (deltaX > nestTolerance || droppable.hasClass('nesting')) {
-            // indent
-            dragged.classList.add('nested');
-            isChild = true;
-          } else if (deltaX < (-1 * nestTolerance)) {
-            // outdent
-            dragged.classList.remove('nested');
+          if (isSame) {
+
+            if (deltaX > nestTolerance || droppable.hasClass('nesting')) {
+              // indent
+              dragged.classList.add('nested');
+              isChild = true;
+            } else if (deltaX < (-1 * nestTolerance)) {
+              // outdent
+              dragged.classList.remove('nested');
+            }
           }
 
           if (!isSame && this.get('data').objectAt(newIndex).get('isChild')) {
