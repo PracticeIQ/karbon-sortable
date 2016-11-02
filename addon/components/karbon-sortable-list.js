@@ -165,11 +165,6 @@ export default Ember.Component.extend({
 
         let isSame = false;
 
-        if (!dragged || !droppable.length) {
-          console.log('on dragover missing dragged: ', dragged,
-                      ' droppable.length: ', droppable.length);
-        }
-
         if (dragged && droppable.length && (dragged.id === droppable[0].id)) {
           isSame = true;
         }
@@ -212,6 +207,11 @@ export default Ember.Component.extend({
         droppable.removeClass('droppable--enter');
         droppable.removeClass('droppable--below');
         droppable.removeClass('droppable--above');
+        droppable.addClass('spacer');
+        const next = Ember.$(droppable).next();
+        if (next) {
+          next.addClass('spacer');
+        }
 
         if (this.get('nestingAllowed')) {
           const index = Ember.$(droppable).index();
