@@ -3,6 +3,7 @@ import layout from '../templates/components/karbon-sortable-item';
 
 export default Ember.Component.extend({
   tagName: 'li',
+  classNames: ['spacer'],
   classNameBindings: ['handleClass'],
   attributeBindings: ['draggable'],
   handleClass: 'droppable',

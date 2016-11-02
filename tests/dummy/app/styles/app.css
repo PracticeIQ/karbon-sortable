@@ -13,11 +13,15 @@ body {
 
 .list-item {
   text-align: center;
-  border-top: 2px solid #fff;
   margin: 0;
   padding: 8px;
+  height: 50px;
   color: white;
   background-color: green;
+}
+
+.spacer .list-item {
+  border-top: 2px solid white;
 }
 
 .list-item:hover {
@@ -46,7 +50,15 @@ li.nested {
 }
 
 .droppable--enter .list-item {
-  background-color: #3aa3aa;
+  background-color: #6aa8cc;
+}
+
+.droppable--below .list-item {
+  border-bottom: 2px solid #aa3a3a;
+}
+
+.droppable--above .list-item {
+  border-top: 2px solid #aa3a3a;
 }
 
 

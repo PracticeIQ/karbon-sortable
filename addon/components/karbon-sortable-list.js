@@ -127,6 +127,7 @@ export default Ember.Component.extend({
       const droppable = item.closest('.droppable');
 
       if (droppable.length === 1) {
+//        console.log('dragenter event: ', event);
         droppable.addClass('droppable--enter');
       }
     });
@@ -135,12 +136,39 @@ export default Ember.Component.extend({
       // prevent default to allow drop
       event.preventDefault();
 
+      const item = Ember.$(event.target);
+      const droppable = item.closest('.droppable');
+
+      const height = event.target.clientTop + event.target.clientHeight;
+
+      const next = Ember.$(droppable).next();
+
+      if (event.originalEvent.offsetY < (height / 2)) {
+        droppable.addClass('droppable--above');
+        droppable.removeClass('droppable--below');
+
+        if (next) {
+          next.addClass('spacer');
+        }
+      } else {
+        droppable.addClass('droppable--below');
+        droppable.removeClass('droppable--above');
+        droppable.addClass('spacer');
+
+        if (next) {
+          next.removeClass('spacer');
+        }
+      }
+
       if (this.get('nestingAllowed')) {
-        const item = Ember.$(event.target);
-        const droppable = item.closest('.droppable');
         const dragged = this.get('_draggedEl');
 
         let isSame = false;
+
+        if (!dragged || !droppable.length) {
+          console.log('on dragover missing dragged: ', dragged,
+                      ' droppable.length: ', droppable.length);
+        }
 
         if (dragged && droppable.length && (dragged.id === droppable[0].id)) {
           isSame = true;
@@ -162,6 +190,7 @@ export default Ember.Component.extend({
             if (deltaX < (-1 * nestTolerance)) {
               // outdent
               droppable.removeClass('nesting');
+              console.log('dragover outdent isChild: ', isChild);
               if (isChild) {
                 droppable.removeClass('nested');
               }
@@ -181,6 +210,9 @@ export default Ember.Component.extend({
 
       if (droppable.length === 1) {
         droppable.removeClass('droppable--enter');
+        droppable.removeClass('droppable--below');
+        droppable.removeClass('droppable--above');
+
         if (this.get('nestingAllowed')) {
           const index = Ember.$(droppable).index();
           const isChild = this.get('data').objectAt(index).get('isChild');
@@ -243,6 +275,13 @@ export default Ember.Component.extend({
         const dataItem = data.objectAt(oldIndex);
 
         droppable.removeClass('droppable--enter');
+        droppable.removeClass('droppable--above');
+        droppable.removeClass('droppable--below');
+        droppable.addClass('spacer');
+        const next = Ember.$(droppable).next();
+        if (next) {
+          next.addClass('spacer');
+        }
 
         const children = this.get('_dragGroup');
 
