@@ -234,14 +234,31 @@ export default Ember.Component.extend({
       let isSame = false;
 
       if (droppable.length === 1) {
+        const dragged = this.get('_draggedEl');
+        const oldIndex = Ember.$(dragged).index();
         let newIndex = Ember.$(droppable).index();
 
-        const dragged = this.get('_draggedEl');
-
-        // need a better equality test
-        if (dragged.id === droppable[0].id) {
+        if (oldIndex < newIndex) {
+          // dragging down
+          // below is fine, above needs - 1
+          if (droppable.hasClass('droppable--above')) {
+            newIndex = newIndex - 1;
+          }
+        } else if (oldIndex > newIndex) {
+          // dragging up
+          // above is fine, below needs + 1
+          if (droppable.hasClass('droppable--below')) {
+            newIndex = newIndex + 1;
+          }
+        } else if (oldIndex === newIndex) {
           isSame = true;
         }
+
+
+        // need a better equality test
+        //if (dragged.id === droppable[0].id) {
+        //  isSame = true;
+        //}
 
 
         // nesting will not be allowed if the drop is for a parent
@@ -270,7 +287,6 @@ export default Ember.Component.extend({
           droppable.removeClass('nesting');
         }
 
-        const oldIndex = Ember.$(dragged).index();
         const data = this.get('data');
         const dataItem = data.objectAt(oldIndex);
 
@@ -278,7 +294,9 @@ export default Ember.Component.extend({
         droppable.removeClass('droppable--above');
         droppable.removeClass('droppable--below');
         droppable.addClass('spacer');
+
         const next = Ember.$(droppable).next();
+
         if (next) {
           next.addClass('spacer');
         }
