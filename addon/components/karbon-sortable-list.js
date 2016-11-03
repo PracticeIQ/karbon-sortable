@@ -15,6 +15,7 @@ export default Ember.Component.extend({
   layout,
   // is the nesting feature enabled or not
   canNest: false,
+  // how many pixels do you have to drag horizontally to indent/outdent
   nestTolerance: 60,
 
   // The DOM element being dragged
@@ -125,7 +126,7 @@ export default Ember.Component.extend({
           this.set('_dragGroup', children);
 
         } else {
-          // alway reset the screenX when starting a drag, it will be used as the
+          // reset the screenX when starting a drag, it will be used as the
           // basis for detecting deltaX
           this.set('_screenX', null);
         }
@@ -391,6 +392,43 @@ export default Ember.Component.extend({
               }
             }
           }
+
+          // We have to move all the data and fire the animations on the
+          // next render, since some browsers may destroy the old elements
+          // and create new ones (our handles will be detached).
+          Ember.run.scheduleOnce('afterRender', () => {
+            if (this && !this.get('isDestroyed')) {
+              const target = this.$('.droppable:eq(' + newIndex + ')');
+
+              if (target) {
+                if (oldIndex > newIndex) {
+                  // slide down
+                  target.css('height', '6px');
+                  target.css('opacity', '0.4');
+
+                  target.animate({
+                    height: '59px',
+                    opacity: 1
+                  }, 500, function() {
+                    target.css('height', 'unset');
+                  });
+                } else {
+                  // slide up
+                  target.css('margin-top', '53px');
+                  target.css('height', '0px');
+                  target.css('opacity', '0.4');
+
+                  target.animate({
+                   'margin-top': '0px',
+                    height: '59px',
+                    opacity: 1
+                  }, 500, function() {
+                    target.css('height', 'unset');
+                  });
+                }
+              }
+            }
+          });
         }
 
         this.set('_dragGroup', null);
