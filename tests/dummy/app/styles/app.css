@@ -5,52 +5,110 @@ body {
   color: #444;
 }
 
+ul.karbon-sortable-list {
+  width: 300px;
+}
+
+/*
+ * karbon-sortable-list is the baked class for the list. You don't have
+ * to use ul/li, but this assumes you are
+ */
 .karbon-sortable-list li {
   list-style: none;
   width: 300px;
   background-color: white;
 }
 
+/*
+ * Our child component is using this, you can use whatever you want.
+ */
 .list-item {
   text-align: center;
-  border-top: 2px solid #fff;
   margin: 0;
-  padding: 8px;
+  padding: 18px;
   color: white;
   background-color: green;
+}
+
+/*
+ * The spacer class is put on the karbon-sortable-item for default
+ * borders. These get added/removed as you drag stuff around.
+ */
+.spacer .list-item {
+  border-top: 2px solid white;
 }
 
 .list-item:hover {
   cursor: pointer;
 }
 
+
+/*
+ * The dragging class is added to the karbon-sortable-item when a
+ * drag starts and removed when it ends. This affects the original
+ * item (in the list) and the drag image if you don't change it.
+ */
 .dragging  .list-item {
   background-color: gray;
   border-color: white;
 }
 
+/*
+ * On drag, if you nest/indent an item, the nesting class will be added
+ * until you unnest/outdent it, leave, or drop. This class is temporary
+ * and should only be present on a single item at a time while dragging.
+ */
 li.nesting {
   margin-left: 60px;
   width: 240px;
 }
 
+/*
+ * The nested class is put on a karbon-sortable-item if it is nested/indented
+ * at the end of the drop. This is the 'permanent' version of 'nesting'.
+ */
 li.nested {
   margin-left: 60px;
   width: 240px;
 }
 
+/*
+ * The dropping class is transient, and applied when an item is dropped then
+ * removed.
+ */
 .dropping  .list-item {
   transition: all 1s ease-out;
   background-color: green;
-  border-top: 2px solid white;
 }
+
+
+/*
+ * When entering an item add the droppable-enter class. This is now primarily
+ * a marker class to know which item we're over, rather than a visual change.
 
 .droppable--enter .list-item {
-  background-color: #3aa3aa;
+  background-color: #6aa8cc;
+} */
+
+/*
+ * Rather than change the background of the drop target, we now mark it as
+ * droppable--below or above based on whether you are in the top half or bottom
+ * half of the drop target. This only works with borders, so the mechanism is
+ * baked in.
+ */
+.droppable--below .list-item {
+  border-bottom: 2px solid #aa3a3a;
+}
+
+.droppable--above .list-item {
+  border-top: 2px solid #aa3a3a;
 }
 
 
 
+/*
+ * This is for a test component, for testing skidding. Not part of the addon.
+ */
 .expandable-item.expanded {
   background-color: black;
   color: white;
@@ -60,6 +118,9 @@ li.nested {
   border-top: 2px solid white;
 }
 
+/*
+ * This is the offscreen image used for marking a group that is dragged.
+ */
 #dragGroupImage {
   width: 50px;
   height: 50px;
@@ -67,4 +128,13 @@ li.nested {
   border-radius: 25px;
   position: absolute;
   left: -100px
+}
+
+#dragSingleImage {
+  width: 30px;
+  height: 30px;
+  background-color: blue;
+  border-radius: 15px;
+  position: absolute;
+  left: -200px
 }

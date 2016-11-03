@@ -8,9 +8,9 @@ export default Ember.Controller.extend({
                   ' new: ', newIndex,
                   ' isChild: ', isChild);
 
-      this.get('model').forEach( (item, index) => {
-        console.log(`${index}: ${item.get('title')}`);
-      });
+//      this.get('model').forEach( (item, index) => {
+//        console.log(`${index}: ${item.get('title')}`);
+//      });
     }
   }
 });
