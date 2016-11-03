@@ -14,7 +14,7 @@
                         containerClass='demo-list'
                         onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}
-    {{#karbon-sortable-item draggable=item.draggable}}
+    {{#karbon-sortable-item draggable=item.draggable data=item}}
       {{expandable-item data=item}}
     {{/karbon-sortable-item}}
   {{/each}}
@@ -22,3 +22,4 @@
 
 {{!-- placeholder --}}
 <div id="dragGroupImage"></div>
+<div id="dragSingleImage"></div>

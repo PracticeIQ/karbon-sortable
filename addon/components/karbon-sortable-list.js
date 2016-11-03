@@ -69,6 +69,8 @@ export default Ember.Component.extend({
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.dropEffect = 'move';
 
+      let dragImage = false;
+
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         let children = this._getChildren(event.target);
@@ -84,7 +86,13 @@ export default Ember.Component.extend({
             childEl.removeClass('droppable');
           });
 
-          event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 25, 25);
+          try {
+            event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 25, 25);
+          } catch(e) {
+            // ie doesn't like setDragImage
+          }
+
+          dragImage = true;
 
           this.set('_dragGroup', children);
 
@@ -95,17 +103,36 @@ export default Ember.Component.extend({
         }
       }
 
+      if (!dragImage) {
+        try {
+          event.dataTransfer.setDragImage(document.getElementById('dragSingleImage'), 15, 15);
+        } catch (e) {
+          // ie doesn't like setDragImage
+        }
+      }
+
       event.target.classList.add('dragging');
     });
 
     this.$().on('dragend.karbonsortable', (event) => {
       if (event.dataTransfer.dropEffect) {
-          event.target.classList.add('dropping');
-          event.target.classList.add('droppable');
-          Ember.run.later( () => {
-              event.target.classList.remove('dragging');
-              event.target.classList.remove('dropping');
-          }, 1000);
+
+          const droppable = Ember.$(event.target);
+
+          droppable.removeClass('dragging');
+
+// move the animations to drop, for non-nesting drops (indent/outdent)
+/*
+          droppable.css('height', '6px');
+          droppable.css('opacity', '0.4');
+
+          droppable.animate({
+            height: '59px',
+            opacity: 1
+          }, 500, function() {
+            droppable.css('height', 'unset');
+          });
+*/
       }
 
       const children = this.get('_dragGroup');
@@ -141,24 +168,55 @@ export default Ember.Component.extend({
 
       const height = event.target.clientTop + event.target.clientHeight;
 
-      const next = Ember.$(droppable).next();
+      let classList = droppable.attr('class');
+      if (classList) {
+        let classes = classList.split(' ');
 
-      if (event.originalEvent.offsetY < (height / 2)) {
-        droppable.addClass('droppable--above');
-        droppable.removeClass('droppable--below');
+        const next = Ember.$(droppable).next();
 
-        if (next) {
-          next.addClass('spacer');
-        }
-      } else {
-        droppable.addClass('droppable--below');
-        droppable.removeClass('droppable--above');
-        droppable.addClass('spacer');
+        if (event.originalEvent.offsetY < (height / 2)) {
+  /*
+          droppable.addClass('droppable--above');
+          droppable.removeClass('droppable--below');
 
-        if (next) {
-          next.removeClass('spacer');
+          if (next) {
+            next.addClass('spacer');
+          }
+          */
+
+          // ff
+
+          classes = classes.filter( (item) => {
+            return item !== 'droppable--below';
+          });
+
+          classes.push('droppable--above');
+          droppable.attr('class', classes.join(' '));
+
+          if (next) {
+            next.addClass('spacer');
+          }
+
+        } else if (event.originalEvent.offsetY > (height / 2)) {
+  /*
+          droppable.addClass('droppable--below');
+          droppable.removeClass('droppable--above');
+          droppable.addClass('spacer');
+  */
+
+          classes = classes.filter( (item) => {
+            return item !== 'droppable--above';
+          });
+
+          classes.push('droppable--below');
+          droppable.attr('class', classes.join(' '));
+
+          if (next) {
+            next.removeClass('spacer');
+          }
         }
       }
+
 
       if (this.get('nestingAllowed')) {
         const dragged = this.get('_draggedEl');
@@ -204,11 +262,31 @@ export default Ember.Component.extend({
       const droppable = item.closest('.droppable--enter');
 
       if (droppable.length === 1) {
-        droppable.removeClass('droppable--enter');
-        droppable.removeClass('droppable--below');
-        droppable.removeClass('droppable--above');
-        droppable.addClass('spacer');
+        // f!@# ff does not handle changing class names one at a time...
+        let classList = droppable.attr('class');
+        let classes = classList.split(' ');
+
+        classes = classes.filter( (item) => {
+          if (item !== 'droppable--enter' &&
+              item !== 'droppable--below' &&
+              item !== 'droppable--above') {
+            return true;
+          }
+          return false;
+        });
+
+//        droppable.removeClass('droppable--enter');
+//        droppable.removeClass('droppable--below');
+//        droppable.removeClass('droppable--above');
+//        droppable.addClass('spacer');
+
+        classes.push('spacer');
+        classList = classes.join(' ');
+
+        droppable.attr('class', classList);
+
         const next = Ember.$(droppable).next();
+
         if (next) {
           next.addClass('spacer');
         }
@@ -238,6 +316,7 @@ export default Ember.Component.extend({
         const oldIndex = Ember.$(dragged).index();
         let newIndex = Ember.$(droppable).index();
 
+
         if (oldIndex < newIndex) {
           // dragging down
           // below is fine, above needs - 1
@@ -245,21 +324,30 @@ export default Ember.Component.extend({
             newIndex = newIndex - 1;
           }
         } else if (oldIndex > newIndex) {
+
+/*
+          droppable.css('height', '6px');
+          droppable.css('opacity', '0.4');
+
+          droppable.animate({
+            height: '59px',
+            opacity: 1
+          }, 500, function() {
+            droppable.css('height', 'unset');
+          });
+*/
+
           // dragging up
           // above is fine, below needs + 1
           if (droppable.hasClass('droppable--below')) {
             newIndex = newIndex + 1;
           }
+
         } else if (oldIndex === newIndex) {
           isSame = true;
         }
 
-
-        // need a better equality test
-        //if (dragged.id === droppable[0].id) {
-        //  isSame = true;
-        //}
-
+        console.log('isSame: ', isSame);
 
         // nesting will not be allowed if the drop is for a parent
         if (this.get('nestingAllowed')) {
@@ -277,6 +365,9 @@ export default Ember.Component.extend({
             } else if (deltaX < (-1 * nestTolerance)) {
               // outdent
               dragged.classList.remove('nested');
+              dragged.classList.remove('nesting');
+            } else {
+              isChild = this.get('data').objectAt(newIndex).get('isChild');
             }
           }
 
@@ -290,10 +381,30 @@ export default Ember.Component.extend({
         const data = this.get('data');
         const dataItem = data.objectAt(oldIndex);
 
+        // ff...
+        let classList = droppable.attr('class');
+        let classes = classList.split(' ');
+
+        classes = classes.filter( (item) => {
+          if (item !== 'droppable--enter' &&
+              item !== 'droppable--above' &&
+              item !== 'droppable--below') {
+            return true;
+          }
+
+          return false;
+        });
+
+        classes.push('spacer');
+
+        droppable.attr('class', classes.join(' '));
+
+/*
         droppable.removeClass('droppable--enter');
         droppable.removeClass('droppable--above');
         droppable.removeClass('droppable--below');
         droppable.addClass('spacer');
+        */
 
         const next = Ember.$(droppable).next();
 
@@ -309,6 +420,12 @@ export default Ember.Component.extend({
           data.insertAt(newIndex, dataItem);
 
           if (children) {
+            children.forEach( (child) => {
+              let childEl = Ember.$(child);
+              childEl.removeClass('dragging');
+              childEl.addClass('droppable');
+            });
+
             // dragging down
             if (newIndex > oldIndex) {
               for (let i = 1; i <= children.length; i++) {
@@ -327,6 +444,7 @@ export default Ember.Component.extend({
               }
             }
 
+/*
             Ember.run.later( () => {
               if (children) {
                 children.forEach( (child) => {
@@ -336,6 +454,7 @@ export default Ember.Component.extend({
                 });
               }
             }, 200);
+            */
 
           }
         }

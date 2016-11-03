@@ -5,6 +5,7 @@ export default DS.Model.extend({
   isChild: DS.attr('boolean', { defaultValue: false }),
   isParent: DS.attr('boolean', { defaultValue: false }),
 
-  // data attribute
-  draggable: true
+  // data attributes
+  draggable: true,
+  inserting: false
 });
