@@ -16,7 +16,7 @@ export default Ember.Component.extend({
   // is the nesting feature enabled or not
   canNest: false,
   // how many pixels do you have to drag horizontally to indent/outdent
-  nestTolerance: 60,
+  nestTolerance: 30,
 
   // The DOM element being dragged
   _draggedEl: null,
@@ -149,19 +149,6 @@ export default Ember.Component.extend({
           const droppable = Ember.$(event.target);
 
           droppable.removeClass('dragging');
-
-// move the animations to drop, for non-nesting drops (indent/outdent)
-/*
-          droppable.css('height', '6px');
-          droppable.css('opacity', '0.4');
-
-          droppable.animate({
-            height: '59px',
-            opacity: 1
-          }, 500, function() {
-            droppable.css('height', 'unset');
-          });
-*/
       }
 
       const children = this.get('_dragGroup');
@@ -368,6 +355,8 @@ export default Ember.Component.extend({
           data.insertAt(newIndex, dataItem);
 
           if (children) {
+            Ember.$(dragged).addClass('droppable');
+
             children.forEach( (child) => {
               let childEl = Ember.$(child);
               childEl.removeClass('dragging');
@@ -397,23 +386,25 @@ export default Ember.Component.extend({
           // next render, since some browsers may destroy the old elements
           // and create new ones (our handles will be detached).
           Ember.run.scheduleOnce('afterRender', () => {
-            if (this && !this.get('isDestroyed')) {
-              const target = this.$('.droppable:eq(' + newIndex + ')');
+            if (!children && this && !this.get('isDestroyed')) {
+              const target = this.$('.droppable:eq(' + (newIndex) + ')');
 
+              // convert these to css animations rather than jquery
               if (target) {
                 if (oldIndex > newIndex) {
-                  // slide down
+                  // drag down
                   target.css('height', '6px');
                   target.css('opacity', '0.4');
 
                   target.animate({
                     height: '59px',
                     opacity: 1
-                  }, 500, function() {
-                    target.css('height', 'unset');
+                  }, 200, function() {
+                    target.css('height', '');
+                    target.css('opacity', '');
                   });
                 } else {
-                  // slide up
+                  // drag up
                   target.css('margin-top', '53px');
                   target.css('height', '0px');
                   target.css('opacity', '0.4');
@@ -422,8 +413,10 @@ export default Ember.Component.extend({
                    'margin-top': '0px',
                     height: '59px',
                     opacity: 1
-                  }, 500, function() {
-                    target.css('height', 'unset');
+                  }, 200, function() {
+                    target.css('height', '');
+                    target.css('margin-top', '');
+                    target.css('opacity', '');
                   });
                 }
               }
