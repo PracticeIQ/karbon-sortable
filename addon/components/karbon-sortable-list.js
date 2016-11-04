@@ -42,7 +42,6 @@ export default Ember.Component.extend({
 
     // must have at least one item below us
     if (index < (data.get('length') - 1)) {
-
       let nextPos = index + 1;
       let nextNode = Ember.$(node).next();
       let nextData = data.objectAt(nextPos);
@@ -65,28 +64,28 @@ export default Ember.Component.extend({
   // doesn't handle it well. So rather than use addClass/removeClass, we apply
   // the end state as a single change to the element.
   _applyClasses: function(target, toRemove, toAdd) {
-      let classList = target.attr('class');
+    let classList = target.attr('class');
 
-      if (classList) {
-        let classes = classList.split(' ');
+    if (classList) {
+      let classes = classList.split(' ');
 
-        if (toRemove && toRemove.length) {
-          classes = classes.filter( (item) => {
-            return !toRemove.includes(item);
-          });
-        }
-
-        // make sure not to add duplicates
-        if (toAdd && toAdd.length) {
-          toAdd.forEach( (item) => {
-            if (!classes.includes(item)) {
-              classes.push(item);
-            }
-          });
-        }
-
-        target.attr('class', classes.join(' '));
+      if (toRemove && toRemove.length) {
+        classes = classes.filter( (item) => {
+          return !toRemove.includes(item);
+        });
       }
+
+      // make sure not to add duplicates
+      if (toAdd && toAdd.length) {
+        toAdd.forEach( (item) => {
+          if (!classes.includes(item)) {
+            classes.push(item);
+          }
+        });
+      }
+
+      target.attr('class', classes.join(' '));
+    }
   },
 
   nestingAllowed: Ember.computed('canNest', '_nestingEnabled', function() {
@@ -103,7 +102,7 @@ export default Ember.Component.extend({
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         let children = this._getChildren(event.target);
-        if (children.length > 0 && event.altKey) {
+        if (children.length > 0 && event.ctrlKey) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
 
@@ -111,8 +110,7 @@ export default Ember.Component.extend({
 
           children.forEach( (child) => {
             let childEl = Ember.$(child);
-            childEl.addClass('dragging');
-            childEl.removeClass('droppable');
+            this._applyClasses(childEl, ['droppable'], ['dragging']);
           });
 
           try {
@@ -124,7 +122,6 @@ export default Ember.Component.extend({
           dragImage = true;
 
           this.set('_dragGroup', children);
-
         } else {
           // reset the screenX when starting a drag, it will be used as the
           // basis for detecting deltaX
@@ -145,7 +142,6 @@ export default Ember.Component.extend({
 
     this.$().on('dragend.karbonsortable', (event) => {
       if (event.dataTransfer.dropEffect) {
-
           const droppable = Ember.$(event.target);
 
           droppable.removeClass('dragging');
@@ -156,8 +152,7 @@ export default Ember.Component.extend({
         if (children) {
           children.forEach( (child) => {
             let childEl = Ember.$(child);
-            childEl.removeClass('dragging');
-            childEl.addClass('droppable');
+            this._applyClasses(childEl, ['dragging'], ['droppable']);
           });
         }
       }, 200);
