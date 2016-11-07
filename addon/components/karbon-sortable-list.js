@@ -276,6 +276,21 @@ export default Ember.Component.extend({
       }
     });
 
+    //
+    // On drop we need to cleanup the borders, and animate the changes. Nesting
+    // and the 50/50 rule really complicate things.
+    //
+    // For the 50/50 rule, we have to adjust the target drop index depending on
+    // whether we are dragging down or up, and whether the drop is above or
+    // below the target.
+    //
+    // The animations require similar conditions. When dragging up, we can remove
+    // and insert the data element, and after render animate the new item height.
+    // For dragging down, we have to insert the new element, then animate it in
+    // and animate the old out, then remove the data item. This means the index
+    // calculations are different in each case.
+    //
+    //
     this.$().on('drop.karbonsortable', (event) => {
       event.preventDefault();
 
@@ -308,7 +323,8 @@ export default Ember.Component.extend({
 
         const isSame = (oldIndex === newIndex);
 
-        // nesting will not be allowed if the drop is for a parent
+        // Nesting will not be allowed if the drop is for a parent. This is to make sure
+        // A single drop is nested correctly
         if (this.get('nestingAllowed')) {
           const screenX = this.get('_screenX');
           const newScreenX = event.originalEvent.screenX;
@@ -344,17 +360,10 @@ export default Ember.Component.extend({
 
         const children = this.get('_dragGroup');
 
-        // Move the data, have to keep the list in sync
+        // move stuff around and animate
         if (!isSame) {
-          if (newIndex < oldIndex) {
-            data.removeAt(oldIndex);
-            data.insertAt(newIndex, dataItem);
-          } else {
-            data.insertAt(newIndex + 1, dataItem);
-          }
-
-
           if (children) {
+            // reset the children before we starting moving things
             Ember.$(dragged).addClass('droppable');
 
             children.forEach( (child) => {
@@ -362,17 +371,14 @@ export default Ember.Component.extend({
               childEl.removeClass('dragging');
               childEl.addClass('droppable');
             });
+          }
 
-            // dragging down
-            if (newIndex > oldIndex) {
-              for (let i = 1; i <= children.length; i++) {
-                let child = data.objectAt(oldIndex);
+          if (newIndex < oldIndex) {
+            // If dragging up, we can remove the old and insert the new
+            data.removeAt(oldIndex);
+            data.insertAt(newIndex, dataItem);
 
-                data.removeAt(oldIndex);
-                data.insertAt(newIndex, child);
-              }
-            } else {
-              // dragging up
+            if (children) {
               for (let i = 1; i <= children.length; i++) {
                 let child = data.objectAt(oldIndex + i);
 
@@ -380,23 +386,40 @@ export default Ember.Component.extend({
                 data.insertAt(newIndex + i, child);
               }
             }
+
+          } else {
+            // If dragging down, we can insert the new, but have to wait to
+            // remove the old until it's animated away
+            data.insertAt(newIndex + 1, dataItem);
+
+            if (children) {
+              for (let i = 1; i <= children.length; i++) {
+                let child = data.objectAt(oldIndex + i);
+                data.insertAt(newIndex + 1 + i, child);
+              }
+
+            }
           }
 
 
-
-          // We have to move all the data and fire the animations on the
-          // next render, since some browsers may destroy the old elements
-          // and create new ones (our handles will be detached).
+          // Fire animations after the render from data moves has completed
           Ember.run.scheduleOnce('afterRender', () => {
-            if (!children && this && !this.get('isDestroyed')) {
-
-
+            if (this && !this.get('isDestroyed')) {
               if (oldIndex > newIndex) {
-                const target = this.$('.droppable:eq(' + (newIndex) + ')');
                 // drag up
+                let target;
+
+                if (children) {
+                  let start = (newIndex) ? (newIndex - 1) : 0;
+                  target = this.$('.droppable:gt(' + start + '):lt(' + (children.length + 1) + ')');
+                } else {
+                  target = this.$('.droppable:eq(' + (newIndex) + ')');
+                }
+
                 target.css('height', '6px');
                 target.css('opacity', '0.4');
 
+                // animate in
                 target.animate({
                   height: '59px',
                   opacity: 1
@@ -405,24 +428,33 @@ export default Ember.Component.extend({
                   target.css('opacity', '');
                 });
               } else {
-                const target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
                 // drag down
-                const orig = this.$('.droppable:eq(' + (oldIndex) + ')');
+                let target, orig;
+
+                if (children) {
+                  orig = this.$('.droppable:gt(' + (oldIndex - 1) + '):lt(' + (children.length + 1) +')');
+                  target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
+                } else {
+                  orig = this.$('.droppable:eq(' + (oldIndex) + ')');
+                  target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
+                }
+
 
                 if (orig) {
+                  // animate original out
                   orig.animate({
                     height: '0px'
                   }, 500, () => {
-                    Ember.run.scheduleOnce('afterRender', () => {
-                      orig.css('height', '');
-                      data.removeAt(oldIndex);
-                    });
+                    orig.css('height', '');
+                    data.removeAt(oldIndex);
                   });
                 }
+
 
                 target.css('height', '0px');
                 target.css('opacity', '0.4');
 
+                // animate new one in
                 target.animate({
                   height: '59px',
                   opacity: 1
@@ -431,17 +463,15 @@ export default Ember.Component.extend({
                   target.css('opacity', '');
                 });
               }
-
             }
           });
-
         }
 
         this.set('_dragGroup', null);
-
         dataItem.set('isChild', isChild);
+        const childCount = (children) ? children.length : 0;
 
-        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild);
+        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild, childCount);
       }
     });
   },
