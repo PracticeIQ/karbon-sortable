@@ -102,7 +102,7 @@ export default Ember.Component.extend({
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         let children = this._getChildren(event.target);
-        if (children.length > 0 && event.ctrlKey) {
+        if (children.length > 0 && (event.ctrlKey || event.metaKey)) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
 
@@ -288,8 +288,6 @@ export default Ember.Component.extend({
         let newIndex = Ember.$(droppable).index();
         let isChild = this.get('data').objectAt(oldIndex).get('isChild');
 
-        const isSame = (oldIndex === newIndex);
-
         // Because we insert above or below based on whether you are on the
         // top or bottom half of the drop target, we have to adjust the insertion
         // indices (we insertAt into the list)
@@ -307,6 +305,8 @@ export default Ember.Component.extend({
           }
 
         }
+
+        const isSame = (oldIndex === newIndex);
 
         // nesting will not be allowed if the drop is for a parent
         if (this.get('nestingAllowed')) {
@@ -349,6 +349,7 @@ export default Ember.Component.extend({
           data.removeAt(oldIndex);
           data.insertAt(newIndex, dataItem);
 
+
           if (children) {
             Ember.$(dragged).addClass('droppable');
 
@@ -377,6 +378,8 @@ export default Ember.Component.extend({
             }
           }
 
+
+
           // We have to move all the data and fire the animations on the
           // next render, since some browsers may destroy the old elements
           // and create new ones (our handles will be detached).
@@ -384,39 +387,38 @@ export default Ember.Component.extend({
             if (!children && this && !this.get('isDestroyed')) {
               const target = this.$('.droppable:eq(' + (newIndex) + ')');
 
-              // convert these to css animations rather than jquery
               if (target) {
                 if (oldIndex > newIndex) {
-                  // drag down
+                  // drag up
                   target.css('height', '6px');
                   target.css('opacity', '0.4');
 
                   target.animate({
                     height: '59px',
                     opacity: 1
-                  }, 200, function() {
+                  }, 2000, function() {
                     target.css('height', '');
                     target.css('opacity', '');
                   });
                 } else {
-                  // drag up
-                  target.css('margin-top', '53px');
+
+                  // drag down
                   target.css('height', '0px');
                   target.css('opacity', '0.4');
 
                   target.animate({
-                   'margin-top': '0px',
                     height: '59px',
                     opacity: 1
-                  }, 200, function() {
+                  }, 2000, function() {
                     target.css('height', '');
-                    target.css('margin-top', '');
                     target.css('opacity', '');
                   });
                 }
               }
+
             }
           });
+
         }
 
         this.set('_dragGroup', null);
