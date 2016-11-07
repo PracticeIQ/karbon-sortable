@@ -346,8 +346,12 @@ export default Ember.Component.extend({
 
         // Move the data, have to keep the list in sync
         if (!isSame) {
-          data.removeAt(oldIndex);
-          data.insertAt(newIndex, dataItem);
+          if (newIndex < oldIndex) {
+            data.removeAt(oldIndex);
+            data.insertAt(newIndex, dataItem);
+          } else {
+            data.insertAt(newIndex + 1, dataItem);
+          }
 
 
           if (children) {
@@ -385,35 +389,47 @@ export default Ember.Component.extend({
           // and create new ones (our handles will be detached).
           Ember.run.scheduleOnce('afterRender', () => {
             if (!children && this && !this.get('isDestroyed')) {
-              const target = this.$('.droppable:eq(' + (newIndex) + ')');
 
-              if (target) {
-                if (oldIndex > newIndex) {
-                  // drag up
-                  target.css('height', '6px');
-                  target.css('opacity', '0.4');
 
-                  target.animate({
-                    height: '59px',
-                    opacity: 1
-                  }, 2000, function() {
-                    target.css('height', '');
-                    target.css('opacity', '');
-                  });
-                } else {
+              if (oldIndex > newIndex) {
+                const target = this.$('.droppable:eq(' + (newIndex) + ')');
+                // drag up
+                target.css('height', '6px');
+                target.css('opacity', '0.4');
 
-                  // drag down
-                  target.css('height', '0px');
-                  target.css('opacity', '0.4');
+                target.animate({
+                  height: '59px',
+                  opacity: 1
+                }, 500, function() {
+                  target.css('height', '');
+                  target.css('opacity', '');
+                });
+              } else {
+                const target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
+                // drag down
+                const orig = this.$('.droppable:eq(' + (oldIndex) + ')');
 
-                  target.animate({
-                    height: '59px',
-                    opacity: 1
-                  }, 2000, function() {
-                    target.css('height', '');
-                    target.css('opacity', '');
+                if (orig) {
+                  orig.animate({
+                    height: '0px'
+                  }, 500, () => {
+                    Ember.run.scheduleOnce('afterRender', () => {
+                      orig.css('height', '');
+                      data.removeAt(oldIndex);
+                    });
                   });
                 }
+
+                target.css('height', '0px');
+                target.css('opacity', '0.4');
+
+                target.animate({
+                  height: '59px',
+                  opacity: 1
+                }, 500, function() {
+                  target.css('height', '');
+                  target.css('opacity', '');
+                });
               }
 
             }
