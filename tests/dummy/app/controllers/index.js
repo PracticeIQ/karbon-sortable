@@ -9,7 +9,7 @@ export default Ember.Controller.extend({
                   ' new: ', newIndex,
                   ' isChild: ', isChild,
                   ' children: ', children,
-                  ' isSection: ' item.get('isSection'));
+                  ' isSection: ', item.get('isSection'));
     },
 
     toggleSection: function(item) {
