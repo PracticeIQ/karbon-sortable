@@ -9,11 +9,15 @@ export default Ember.Component.extend({
   data: null,
 
   click: function() {
-    this.toggleProperty('expanded');
+    if (this.get('data.isSection')) {
+      return true;
+    } else {
+      this.toggleProperty('expanded');
 
-    const data = this.get('data');
-    data.set('draggable', !this.get('expanded'));
-    return false;
+      const data = this.get('data');
+      data.set('draggable', !this.get('expanded'));
+      return false;
+    }
   }
 });
 

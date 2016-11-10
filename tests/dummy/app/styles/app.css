@@ -42,6 +42,14 @@ ul.karbon-sortable-list {
   cursor: pointer;
 }
 
+.section {
+  margin-top: 18px;
+}
+
+.section .list-item {
+  background-color: rgb(213, 185, 142);
+}
+
 
 /*
  * The dragging class is added to the karbon-sortable-item when a

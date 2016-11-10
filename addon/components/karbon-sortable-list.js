@@ -102,6 +102,13 @@ export default Ember.Component.extend({
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         let children = this._getChildren(event.target);
+        const pkid = Ember.$(event.target).attr('data-pkid');
+        const dataItem = this.get('data').find( (item) => {
+          return item.get('id') === pkid;
+        });
+
+        const isSection = dataItem.get('isSection');
+
         if (children.length > 0 && (event.ctrlKey || event.metaKey)) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
@@ -122,7 +129,10 @@ export default Ember.Component.extend({
           dragImage = true;
 
           this.set('_dragGroup', children);
-        } else {
+        } else if (isSection) {
+          this.set('_nestingEnabled', false);
+          this.set('_screenX', null);
+        }else {
           // reset the screenX when starting a drag, it will be used as the
           // basis for detecting deltaX
           this.set('_screenX', null);
@@ -188,11 +198,12 @@ export default Ember.Component.extend({
         const draggedIndex = Ember.$(dragged).index();
         const index = Ember.$(droppable).index();
         const isSame = (index === draggedIndex);
+        const dataItem = this.get('data').objectAt(index);
 
         if (isSame) {
           if (this.get('nestingAllowed')) {
             // indent/outdent
-            const isChild = this.get('data').objectAt(index).get('isChild');
+            const isChild = dataItem.get('isChild');
             const screenX = this.get('_screenX');
             const newScreenX = event.originalEvent.screenX;
 
@@ -301,7 +312,9 @@ export default Ember.Component.extend({
         const dragged = this.get('_draggedEl');
         const oldIndex = Ember.$(dragged).index();
         let newIndex = Ember.$(droppable).index();
-        let isChild = this.get('data').objectAt(oldIndex).get('isChild');
+
+        const dropDataItem = this.get('data').objectAt(oldIndex);
+        let isChild = dropDataItem.get('isChild');
 
         // Because we insert above or below based on whether you are on the
         // top or bottom half of the drop target, we have to adjust the insertion
@@ -347,7 +360,7 @@ export default Ember.Component.extend({
         }
 
         const data = this.get('data');
-        const dataItem = data.objectAt(oldIndex);
+//        const dataItem = data.objectAt(oldIndex);
 
         // clear the borders
         this._applyClasses(droppable, ['droppable--enter', 'droppable--above', 'droppable--below'], ['spacer']);
@@ -376,7 +389,7 @@ export default Ember.Component.extend({
           if (newIndex < oldIndex) {
             // If dragging up, we can remove the old and insert the new
             data.removeAt(oldIndex);
-            data.insertAt(newIndex, dataItem);
+            data.insertAt(newIndex, dropDataItem);
 
             if (children) {
               for (let i = 1; i <= children.length; i++) {
@@ -390,7 +403,7 @@ export default Ember.Component.extend({
           } else {
             // If dragging down, we can insert the new, but have to wait to
             // remove the old until it's animated away
-            data.insertAt(newIndex + 1, dataItem);
+            data.insertAt(newIndex + 1, dropDataItem);
 
             if (children) {
               for (let i = 1; i <= children.length; i++) {
@@ -416,7 +429,7 @@ export default Ember.Component.extend({
                   target = this.$('.droppable:eq(' + (newIndex) + ')');
                 }
 
-                target.css('height', '6px');
+                target.css('height', '0px');
                 target.css('opacity', '0.4');
 
                 // animate in
@@ -434,6 +447,7 @@ export default Ember.Component.extend({
                 if (children) {
                   orig = this.$('.droppable:gt(' + (oldIndex - 1) + '):lt(' + (children.length + 1) +')');
                   target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
+ //                 target.slice(1).css('margin-left', '60px').css('width', '240px');
                 } else {
                   orig = this.$('.droppable:eq(' + (oldIndex) + ')');
                   target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
@@ -461,6 +475,8 @@ export default Ember.Component.extend({
                 }, 500, function() {
                   target.css('height', '');
                   target.css('opacity', '');
+//                  target.css('margin-left', '');
+//                  target.css('width', '');
                 });
               }
             }
@@ -468,10 +484,15 @@ export default Ember.Component.extend({
         }
 
         this.set('_dragGroup', null);
-        dataItem.set('isChild', isChild);
+        dropDataItem.set('isChild', isChild);
         const childCount = (children) ? children.length : 0;
 
-        this.get('onOrderChanged')(dataItem, oldIndex, newIndex, isChild, childCount);
+        let adjustedIndex = newIndex;
+        if (children && (oldIndex < newIndex)) {
+          adjustedIndex = newIndex - children.length;
+        }
+
+        this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
       }
     });
   },

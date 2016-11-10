@@ -14,9 +14,13 @@
                         containerClass='demo-list'
                         onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}
-    {{#karbon-sortable-item draggable=item.draggable data=item}}
-      {{expandable-item data=item}}
-    {{/karbon-sortable-item}}
+    {{#unless item.isCollapsedSectionChild}}
+      {{#karbon-sortable-item draggable=item.draggable
+                              data=item
+                              toggleSection=(action 'toggleSection')}}
+        {{expandable-item data=item}}
+      {{/karbon-sortable-item}}
+    {{/unless}}
   {{/each}}
 {{/karbon-sortable-list}}
 
