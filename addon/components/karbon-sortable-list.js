@@ -30,6 +30,26 @@ export default Ember.Component.extend({
   // When dragging parents and children, keep the data here
   _dragGroup: null,
 
+  _getParentKey: function(item) {
+    const data = this.get('data');
+    const index = data.indexOf(item);
+    const length = data.get('length');
+
+    // not sure how it could be 0, but
+    if (index > 0) {
+      const precedent = data.objectAt(index - 1);
+      let parentKey = precedent.get('parentChecklistItem');
+      if (parentKey) {
+        return parentKey;
+      } else {
+        return precedent.get('id');
+      }
+    }
+  },
+
+  // ??? need to move all node inquiries to data inquiries. The problem
+  // is that nodes disappear when sections are collapsed, so indices only
+  // work if they are all expanded...
   _getChildren: function(node) {
     let children = [];
     const data = this.get('data');
@@ -484,9 +504,28 @@ export default Ember.Component.extend({
         }
 
         this.set('_dragGroup', null);
-        dropDataItem.set('isChild', isChild);
+
+
+        // semantics are very different.
+        //dropDataItem.set('isChild', isChild);
+        // if this is nested, we have to know our parent key, otherwise we
+        // set our parent key to null
+
+        if (isChild) {
+          // Only do the lookups if this is a transition
+          if (!dropDataItem.get('isChild')) {
+            dropDataItem.set('parentChecklistItem', this.getParentKey(dropDataItem));
+          }
+        } else {
+          // this one's cheap
+          dropDataItem.set('parentChecklistItem', null);
+        }
+
         const childCount = (children) ? children.length : 0;
 
+        // If we're dragging a group down, the new index will be off because
+        // of the order we have to do things to make the animations work. We
+        // fix/adjust it here
         let adjustedIndex = newIndex;
         if (children && (oldIndex < newIndex)) {
           adjustedIndex = newIndex - children.length;
