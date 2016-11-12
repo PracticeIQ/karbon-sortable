@@ -91,14 +91,6 @@ li.nested {
 
 
 /*
- * When entering an item add the droppable-enter class. This is now primarily
- * a marker class to know which item we're over, rather than a visual change.
-
-.droppable--enter .list-item {
-  background-color: #6aa8cc;
-} */
-
-/*
  * Rather than change the background of the drop target, we now mark it as
  * droppable--below or above based on whether you are in the top half or bottom
  * half of the drop target. This only works with borders, so the mechanism is

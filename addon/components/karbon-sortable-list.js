@@ -190,14 +190,17 @@ export default Ember.Component.extend({
       this.set('_nestingEnabled', true);
     });
 
+/*
     this.$().on('dragenter.karbonsortable', (event) => {
       const item = Ember.$(event.target);
       const droppable = item.closest('.droppable');
 
       if (droppable.length === 1) {
-        droppable.addClass('droppable--enter');
+        // ??? I don't think we need this anymore...
+//        droppable.addClass('droppable--enter');
       }
     });
+    */
 
     // dragover fires on the drop element as you drag, throttling is up to the
     // browser, and they do it differently so this can cause bottlenecks. Do
@@ -296,7 +299,7 @@ export default Ember.Component.extend({
             }
           }
         } else {
-          this._applyClasses(droppable, ['droppable--enter', 'droppable--below', 'droppable--above'], ['spacer']);
+          this._applyClasses(droppable, ['droppable--below', 'droppable--above'], ['spacer']);
 
           const next = Ember.$(droppable).next();
 
@@ -323,10 +326,12 @@ export default Ember.Component.extend({
     //
     //
     this.$().on('drop.karbonsortable', (event) => {
+      console.log('drop');
+
       event.preventDefault();
 
       const item = Ember.$(event.target);
-      const droppable = item.closest('.droppable--enter');
+      const droppable = item.closest('.droppable');
 
       if (droppable.length === 1) {
         const dragged = this.get('_draggedEl');
@@ -383,7 +388,7 @@ export default Ember.Component.extend({
 //        const dataItem = data.objectAt(oldIndex);
 
         // clear the borders
-        this._applyClasses(droppable, ['droppable--enter', 'droppable--above', 'droppable--below'], ['spacer']);
+        this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
 
         const next = Ember.$(droppable).next();
 
@@ -467,7 +472,6 @@ export default Ember.Component.extend({
                 if (children) {
                   orig = this.$('.droppable:gt(' + (oldIndex - 1) + '):lt(' + (children.length + 1) +')');
                   target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
- //                 target.slice(1).css('margin-left', '60px').css('width', '240px');
                 } else {
                   orig = this.$('.droppable:eq(' + (oldIndex) + ')');
                   target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
@@ -495,8 +499,6 @@ export default Ember.Component.extend({
                 }, 500, function() {
                   target.css('height', '');
                   target.css('opacity', '');
-//                  target.css('margin-left', '');
-//                  target.css('width', '');
                 });
               }
             }
@@ -531,7 +533,12 @@ export default Ember.Component.extend({
           adjustedIndex = newIndex - children.length;
         }
 
-        this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
+        // tricky...we can't fire this until our copy of the data has completed its
+        // runloop updates. Next isn't long enough, neither is schedule after render,
+        // as there are things in that queue that have to go first.
+        Ember.run.later( () => {
+          this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
+        }, 2000);
       }
     });
   },
