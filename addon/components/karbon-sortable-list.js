@@ -16,7 +16,7 @@ export default Ember.Component.extend({
   // is the nesting feature enabled or not
   canNest: false,
   // how many pixels do you have to drag horizontally to indent/outdent
-  nestTolerance: 30,
+  nestTolerance: 60,
 
   // The DOM element being dragged
   _draggedEl: null,
@@ -26,6 +26,7 @@ export default Ember.Component.extend({
   // We enable/disable nesting during certain operations, regardless
   // of the canNest user setting
   _nestingEnabled: true,
+  _isSame: false,
 
   // When dragging parents and children, keep the data here
   _dragGroup: null,
@@ -84,7 +85,7 @@ export default Ember.Component.extend({
   // doesn't handle it well. So rather than use addClass/removeClass, we apply
   // the end state as a single change to the element.
   _applyClasses: function(target, toRemove, toAdd) {
-    let classList = target.attr('class');
+    let classList = target.attr('class') || '';
 
     if (classList) {
       let classes = classList.split(' ');
@@ -151,12 +152,12 @@ export default Ember.Component.extend({
           this.set('_dragGroup', children);
         } else if (isSection) {
           this.set('_nestingEnabled', false);
-          this.set('_screenX', null);
-        }else {
-          // reset the screenX when starting a drag, it will be used as the
-          // basis for detecting deltaX
-          this.set('_screenX', null);
         }
+
+        // reset the screenX when starting a drag, it will be used as the
+        // basis for detecting deltaX
+        this.set('_screenX', null);
+
       }
 
       if (!dragImage) {
@@ -187,20 +188,85 @@ export default Ember.Component.extend({
         }
       }, 200);
 
+      // we have to handle indenting/outdenting here, because you can drop outside
+      // the target to change the indentation
+      if (!children && this.get('_isSame') && this.get('nestingAllowed')) {
+        const dragged = this.get('_draggedEl');
+        const draggedEl = Ember.$(dragged);
+        const oldIndex = draggedEl.index();
+        const dropDataItem = this.get('data').objectAt(oldIndex);
+
+        let isChild = dropDataItem.get('isChild');
+
+
+        if (draggedEl.hasClass('nesting')) {
+          // indent
+          this._applyClasses(draggedEl, ['nesting'], ['nested']);
+          isChild = true;
+        } else if (!draggedEl.hasClass('nested')){
+          // outdent
+          isChild = false;
+        }
+
+        if (isChild) {
+          // Only do the lookups if this is a transition
+          if (!dropDataItem.get('isChild')) {
+            dropDataItem.set('parentChecklistItem', this._getParentKey(dropDataItem));
+          }
+        } else {
+          // this one's cheap
+          dropDataItem.set('parentChecklistItem', null);
+        }
+
+        Ember.run.later( () => {
+          this.get('onOrderChanged')(dropDataItem, oldIndex, oldIndex, isChild, 0);
+        }, 2000);
+
+      }
+
       this.set('_nestingEnabled', true);
     });
 
-/*
-    this.$().on('dragenter.karbonsortable', (event) => {
-      const item = Ember.$(event.target);
-      const droppable = item.closest('.droppable');
 
-      if (droppable.length === 1) {
-        // ??? I don't think we need this anymore...
-//        droppable.addClass('droppable--enter');
+    // When you indent/outdent, the cursor may leave the droppable targets (you
+    // aren't aiming for a drop target, just a delta in horizontal movement). This
+    // means we have to handle indent/outdent via drag and drag end, not drag over
+    // and drop. These must be kept orthogonal operations.
+    this.$().on('drag.karbonsortable', (event) => {
+      const item = Ember.$(event.target);
+
+      const dragged = this.get('_draggedEl');
+      const draggedEl = Ember.$(dragged);
+      const index = draggedEl.index();
+      const dataItem = this.get('data').objectAt(index);
+      const isSame = this.get('_isSame');
+
+      if (isSame) {
+        if (this.get('nestingAllowed')) {
+          // indent/outdent
+          const isChild = dataItem.get('isChild');
+          const screenX = this.get('_screenX');
+          const newScreenX = event.originalEvent.screenX;
+
+          if (!screenX) {
+            this.set('_screenX', newScreenX);
+          } else {
+            const deltaX = newScreenX - screenX;
+            const nestTolerance = this.get('nestTolerance');
+
+            if (deltaX < (-1 * nestTolerance)) {
+              // outdent
+              this._applyClasses(draggedEl, ['nesting', 'nested'], null);
+              this.set('_screenX', newScreenX);
+            } else if (deltaX > nestTolerance) {
+              // indent
+              this._applyClasses(draggedEl, null, ['nesting']);
+              this.set('_screenX', newScreenX);
+            }
+          }
+        }
       }
     });
-    */
 
     // dragover fires on the drop element as you drag, throttling is up to the
     // browser, and they do it differently so this can cause bottlenecks. Do
@@ -223,6 +289,9 @@ export default Ember.Component.extend({
         const isSame = (index === draggedIndex);
         const dataItem = this.get('data').objectAt(index);
 
+        this.set('_isSame', isSame);
+
+/*
         if (isSame) {
           if (this.get('nestingAllowed')) {
             // indent/outdent
@@ -238,18 +307,19 @@ export default Ember.Component.extend({
 
               if (deltaX < (-1 * nestTolerance)) {
                 // outdent
-                if (isChild) {
-                  this._applyClasses(droppable, ['nesting', 'nested'], null);
-                } else {
-                  droppable.removeClass('nesting');
-                }
+                this._applyClasses(droppable, ['nesting', 'nested'], null);
+                this.set('_screenX', newScreenX);
               } else if (deltaX > nestTolerance) {
                 // indent
-                droppable.addClass('nesting');
+                this._applyClasses(droppable, null, ['nesting']);
+                this.set('_screenX', newScreenX);
               }
             }
           }
         } else {
+          */
+
+        if (!isSame) {
           // check/flip the borders
           const height = event.target.clientTop + event.target.clientHeight;
 
@@ -326,8 +396,6 @@ export default Ember.Component.extend({
     //
     //
     this.$().on('drop.karbonsortable', (event) => {
-      console.log('drop');
-
       event.preventDefault();
 
       const item = Ember.$(event.target);
@@ -360,32 +428,7 @@ export default Ember.Component.extend({
         }
 
         const isSame = (oldIndex === newIndex);
-
-        // Nesting will not be allowed if the drop is for a parent. This is to make sure
-        // A single drop is nested correctly
-        if (this.get('nestingAllowed')) {
-          const screenX = this.get('_screenX');
-          const newScreenX = event.originalEvent.screenX;
-          const deltaX = newScreenX - screenX;
-          const nestTolerance = this.get('nestTolerance');
-
-          if (isSame) {
-            if (deltaX > nestTolerance || droppable.hasClass('nesting')) {
-              // indent
-              dragged.classList.add('nested');
-              isChild = true;
-            } else if (deltaX < (-1 * nestTolerance)) {
-              // outdent
-              this._applyClasses(Ember.$(dragged), ['nested', 'nesting'], null);
-              isChild = false;
-            }
-          }
-
-          droppable.removeClass('nesting');
-        }
-
         const data = this.get('data');
-//        const dataItem = data.objectAt(oldIndex);
 
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
@@ -507,22 +550,6 @@ export default Ember.Component.extend({
 
         this.set('_dragGroup', null);
 
-
-        // semantics are very different.
-        //dropDataItem.set('isChild', isChild);
-        // if this is nested, we have to know our parent key, otherwise we
-        // set our parent key to null
-
-        if (isChild) {
-          // Only do the lookups if this is a transition
-          if (!dropDataItem.get('isChild')) {
-            dropDataItem.set('parentChecklistItem', this.getParentKey(dropDataItem));
-          }
-        } else {
-          // this one's cheap
-          dropDataItem.set('parentChecklistItem', null);
-        }
-
         const childCount = (children) ? children.length : 0;
 
         // If we're dragging a group down, the new index will be off because
@@ -533,12 +560,17 @@ export default Ember.Component.extend({
           adjustedIndex = newIndex - children.length;
         }
 
+
         // tricky...we can't fire this until our copy of the data has completed its
         // runloop updates. Next isn't long enough, neither is schedule after render,
         // as there are things in that queue that have to go first.
-        Ember.run.later( () => {
-          this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
-        }, 2000);
+
+        // don't run for indent/outdent operations
+        if (childCount || !isSame) {
+          Ember.run.later( () => {
+            this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
+          }, 2000);
+        }
       }
     });
   },
@@ -550,5 +582,6 @@ export default Ember.Component.extend({
     this.$().off('dragover.karbonsortable');
     this.$().off('dragleave.karbonsortable');
     this.$().off('drop.karbonsortable');
+    this.$().off('drag.karbonsortable');
   }
 });
