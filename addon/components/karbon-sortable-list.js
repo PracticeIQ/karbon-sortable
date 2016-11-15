@@ -130,6 +130,8 @@ export default Ember.Component.extend({
 
         const isSection = dataItem.get('isSection');
 
+        console.log('children.length: ', children.length);
+
         if (children.length > 0 && (event.ctrlKey || event.metaKey)) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
@@ -198,7 +200,6 @@ export default Ember.Component.extend({
 
         let isChild = dropDataItem.get('isChild');
 
-
         if (draggedEl.hasClass('nesting')) {
           // indent
           this._applyClasses(draggedEl, ['nesting'], ['nested']);
@@ -218,9 +219,10 @@ export default Ember.Component.extend({
           dropDataItem.set('parentChecklistItem', null);
         }
 
+
         Ember.run.later( () => {
           this.get('onOrderChanged')(dropDataItem, oldIndex, oldIndex, isChild, 0);
-        }, 2000);
+        }, 1000);
 
       }
 
@@ -248,17 +250,19 @@ export default Ember.Component.extend({
           const screenX = this.get('_screenX');
           const newScreenX = event.originalEvent.screenX;
 
+          const nest = draggedEl.hasClass('nesting') || draggedEl.hasClass('nested');
+
           if (!screenX) {
             this.set('_screenX', newScreenX);
           } else {
             const deltaX = newScreenX - screenX;
             const nestTolerance = this.get('nestTolerance');
 
-            if (deltaX < (-1 * nestTolerance)) {
+            if (deltaX < (-1 * nestTolerance) && nest) {
               // outdent
               this._applyClasses(draggedEl, ['nesting', 'nested'], null);
               this.set('_screenX', newScreenX);
-            } else if (deltaX > nestTolerance) {
+            } else if (deltaX > nestTolerance && !nest) {
               // indent
               this._applyClasses(draggedEl, null, ['nesting']);
               this.set('_screenX', newScreenX);
@@ -290,34 +294,6 @@ export default Ember.Component.extend({
         const dataItem = this.get('data').objectAt(index);
 
         this.set('_isSame', isSame);
-
-/*
-        if (isSame) {
-          if (this.get('nestingAllowed')) {
-            // indent/outdent
-            const isChild = dataItem.get('isChild');
-            const screenX = this.get('_screenX');
-            const newScreenX = event.originalEvent.screenX;
-
-            if (!screenX) {
-              this.set('_screenX', newScreenX);
-            } else {
-              const deltaX = newScreenX - screenX;
-              const nestTolerance = this.get('nestTolerance');
-
-              if (deltaX < (-1 * nestTolerance)) {
-                // outdent
-                this._applyClasses(droppable, ['nesting', 'nested'], null);
-                this.set('_screenX', newScreenX);
-              } else if (deltaX > nestTolerance) {
-                // indent
-                this._applyClasses(droppable, null, ['nesting']);
-                this.set('_screenX', newScreenX);
-              }
-            }
-          }
-        } else {
-          */
 
         if (!isSame) {
           // check/flip the borders
@@ -359,6 +335,7 @@ export default Ember.Component.extend({
 
       if (droppable.length === 1) {
         if (isSame) {
+          /*
           if (this.get('nestingAllowed')) {
             const isChild = this.get('data').objectAt(index).get('isChild');
 
@@ -368,6 +345,7 @@ export default Ember.Component.extend({
               droppable.removeClass('nesting');
             }
           }
+          */
         } else {
           this._applyClasses(droppable, ['droppable--below', 'droppable--above'], ['spacer']);
 
@@ -546,30 +524,30 @@ export default Ember.Component.extend({
               }
             }
           });
-        }
 
-        this.set('_dragGroup', null);
+          this.set('_dragGroup', null);
 
-        const childCount = (children) ? children.length : 0;
+          const childCount = (children) ? children.length : 0;
 
-        // If we're dragging a group down, the new index will be off because
-        // of the order we have to do things to make the animations work. We
-        // fix/adjust it here
-        let adjustedIndex = newIndex;
-        if (children && (oldIndex < newIndex)) {
-          adjustedIndex = newIndex - children.length;
-        }
+          // If we're dragging a group down, the new index will be off because
+          // of the order we have to do things to make the animations work. We
+          // fix/adjust it here
+          let adjustedIndex = newIndex;
+          if (children && (oldIndex < newIndex)) {
+            adjustedIndex = newIndex - children.length;
+          }
 
 
-        // tricky...we can't fire this until our copy of the data has completed its
-        // runloop updates. Next isn't long enough, neither is schedule after render,
-        // as there are things in that queue that have to go first.
+          // tricky...we can't fire this until our copy of the data has completed its
+          // runloop updates. Next isn't long enough, neither is schedule after render,
+          // as there are things in that queue that have to go first.
 
-        // don't run for indent/outdent operations
-        if (childCount || !isSame) {
-          Ember.run.later( () => {
-            this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
-          }, 2000);
+          // don't run for indent/outdent operations
+          if (childCount || !isSame) {
+            Ember.run.later( () => {
+              this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
+            }, 1000);
+          }
         }
       }
     });
