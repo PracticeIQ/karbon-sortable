@@ -34,7 +34,6 @@ export default Ember.Component.extend({
   _getParentKey: function(item) {
     const data = this.get('data');
     const index = data.indexOf(item);
-    const length = data.get('length');
 
     // not sure how it could be 0, but
     if (index > 0) {
@@ -237,17 +236,13 @@ export default Ember.Component.extend({
     // means we have to handle indent/outdent via drag and drag end, not drag over
     // and drop. These must be kept orthogonal operations.
     this.$().on('drag.karbonsortable', (event) => {
-      const item = Ember.$(event.target);
-
       const dragged = this.get('_draggedEl');
       const draggedEl = Ember.$(dragged);
-      const dataItem = this._itemForNode(dragged);
       const isSame = this.get('_isSame');
 
       if (isSame) {
         if (this.get('nestingAllowed')) {
           // indent/outdent
-          const isChild = dataItem.get('isChild');
           const screenX = this.get('_screenX');
           const newScreenX = event.originalEvent.screenX;
 
@@ -294,8 +289,6 @@ export default Ember.Component.extend({
         const dataItem = this._itemForNode(droppable);
         const index = this.get('data').indexOf(dataItem);
         const isSame = (index === draggedIndex);
-//        const isSection = this.get('data').objectAt(draggedIndex).get('isSection');
-
         const isSection = draggedItem.get('isSection');
 
         this.set('_isSame', isSame);
@@ -332,12 +325,10 @@ export default Ember.Component.extend({
 
     this.$().on('dragleave.karbonsortable', (event) => {
       const dragged = this.get('_draggedEl');
-//      const draggedIndex = Ember.$(dragged).index();
-      const draggedItem = this._itemForNode('dragged');
+      const draggedItem = this._itemForNode(dragged);
       const draggedIndex = this.get('data').indexOf(draggedItem);
       const item = Ember.$(event.target);
       const droppable = item.closest('.droppable');
-//      const index = Ember.$(droppable).index();
       const droppableItem = this._itemForNode(droppable);
       const index = this.get('data').indexOf(droppableItem);
       const isSame = (draggedIndex === index);
@@ -349,8 +340,7 @@ export default Ember.Component.extend({
           const next = Ember.$(droppable).next();
 
           if (next) {
-            this._applyClasses(next, null, ['spacer'])
-            //next.addClass('spacer');
+            this._applyClasses(next, null, ['spacer']);
           }
         }
       }
