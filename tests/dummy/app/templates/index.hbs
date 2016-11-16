@@ -16,9 +16,9 @@
   {{#each model as |item|}}
     {{#unless item.isCollapsedSectionChild}}
       {{#karbon-sortable-item draggable=item.draggable
-                              data=item
-                              toggleSection=(action 'toggleSection')}}
-        {{expandable-item data=item}}
+                              data=item}}
+        {{expandable-item data=item
+                          toggleSection=(action 'toggleSection')}}
       {{/karbon-sortable-item}}
     {{/unless}}
   {{/each}}

@@ -10,7 +10,8 @@ export default Ember.Component.extend({
 
   click: function() {
     if (this.get('data.isSection')) {
-      return true;
+      console.log('sending toggleSection');
+      this.sendAction('toggleSection', this.get('data'));
     } else {
       this.toggleProperty('expanded');
 

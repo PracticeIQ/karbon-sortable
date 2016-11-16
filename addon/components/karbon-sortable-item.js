@@ -17,16 +17,5 @@ export default Ember.Component.extend({
   didInsertElement() {
     // We don't need to pass any data (yet), but FF won't drag unless this is set
     this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', 'text')");
-  },
-
-/*
-  click() {
-    const data = this.get('data');
-
-    if (data.get('isSection')) {
-      this.get('toggleSection')(data);
-      return false;
-    }
   }
-  */
 });
