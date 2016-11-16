@@ -222,7 +222,7 @@ export default Ember.Component.extend({
 
         Ember.run.later( () => {
           this.get('onOrderChanged')(dropDataItem, oldIndex, oldIndex, isChild, 0);
-        }, 1000);
+        }, 100);
 
       }
 
@@ -546,7 +546,7 @@ export default Ember.Component.extend({
           if (childCount || !isSame) {
             Ember.run.later( () => {
               this.get('onOrderChanged')(dropDataItem, oldIndex, adjustedIndex, isChild, childCount);
-            }, 1000);
+            }, 600);
           }
         }
       }
