@@ -368,6 +368,7 @@ export default Ember.Component.extend({
       const droppable = item.closest('.droppable');
 
       if (droppable.length === 1) {
+        const clientHeight = Ember.$(droppable).height();
         const data = this.get('data');
         const dragged = this.get('_draggedEl');
         const draggedDataItem = this._itemForNode(dragged);
@@ -476,7 +477,7 @@ export default Ember.Component.extend({
 
                 // animate in
                 target.animate({
-                  height: '59px',
+                  height: `${clientHeight}px`,
                   opacity: 1
                 }, 500, function() {
                   target.css('height', '');
@@ -511,7 +512,7 @@ export default Ember.Component.extend({
 
                 // animate new one in
                 target.animate({
-                  height: '59px',
+                  height: `${clientHeight}px`,
                   opacity: 1
                 }, 500, function() {
                   target.css('height', '');
@@ -538,12 +539,9 @@ export default Ember.Component.extend({
           // runloop updates. Next isn't long enough, neither is schedule after render,
           // as there are things in that queue that have to go first.
 
-          // don't run for indent/outdent operations
-          if (childCount || !isSame) {
-            Ember.run.later( () => {
-              this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, isChild, childCount);
-            }, 1000);
-          }
+          Ember.run.later( () => {
+            this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, isChild, childCount);
+          }, 1000);
         }
       }
     });
