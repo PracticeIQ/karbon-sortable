@@ -27,6 +27,7 @@ export default Ember.Component.extend({
   // of the canNest user setting
   _nestingEnabled: true,
   _isSame: false,
+  _lastSectionNode: null,
 
   // When dragging parents and children, keep the data here
   _dragGroup: null,
@@ -67,8 +68,26 @@ export default Ember.Component.extend({
       return [];
     }
 
+    if (dataItem.get('isSection')) {
+      // get all items in the section
+      if (!dataItem.get('sectionIsCollapsed') && index < (data.get('length') - 1)) {
+        let nextPos = index + 1;
+        let nextNode = Ember.$(node).next();
+        let nextData = data.objectAt(nextPos);
+
+        while (!nextData.get('isSection')) {
+          children.push(nextNode);
+          nextNode = Ember.$(nextNode).next();
+          nextPos++;
+          if (nextPos >= data.get('length')) {
+            break;
+          }
+          nextData = data.objectAt(nextPos);
+        }
+      }
+
     // must have at least one item below us
-    if (index < (data.get('length') - 1)) {
+    } else if (index < (data.get('length') - 1)) {
       let nextPos = index + 1;
       let nextNode = Ember.$(node).next();
       let nextData = data.objectAt(nextPos);
@@ -85,6 +104,37 @@ export default Ember.Component.extend({
     }
 
     return children;
+  },
+
+  // this gets called a lot, avoid rescans in callbacks, just
+  // use a flat scan
+  _lastItemInSection: function(sectionItem) {
+    const data = this.get('data');
+    const myIndex = data.indexOf(sectionItem);
+
+    if (myIndex < data.get('length')) {
+      for (let i = myIndex + 1; i < data.get('length'); i++) {
+        if (data.objectAt(i).get('isSection')) {
+          return data.objectAt(i - 1);
+        }
+      }
+
+      return data.objectAt(data.get('length') - 1);
+    }
+  },
+
+  _getSectionId: function(item) {
+    const data = this.get('data');
+    const myIndex = data.indexOf(item);
+
+    if (myIndex > 0) {
+      for (let i = myIndex - 1; i >= 0; i--) {
+        const nextObject = data.objectAt(i);
+        if (nextObject.get('isSection')) {
+          return nextObject.get('id');
+        }
+      }
+    }
   },
 
   // Changing the class on an element initiates a re-render. Firefox in particular
@@ -128,20 +178,22 @@ export default Ember.Component.extend({
 
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
+        this.set('_dragGroup', null);
         let children = this._getChildren(event.target);
         const dataItem = this._itemForNode(event.target);
 
         const isSection = dataItem.get('isSection');
 
-        if (children.length > 0 && (event.ctrlKey || event.metaKey)) {
+        if (isSection || (children.length > 0 && (event.ctrlKey || event.metaKey))) {
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
 
-          Ember.$(event.target).removeClass('droppable');
+//          Ember.$(event.target).removeClass('droppable');
 
           children.forEach( (child) => {
             let childEl = Ember.$(child);
-            this._applyClasses(childEl, ['droppable'], ['dragging']);
+ //           this._applyClasses(childEl, ['droppable'], ['dragging']);
+            this._applyClasses(childEl, null, ['dragging']);
           });
 
           try {
@@ -153,8 +205,6 @@ export default Ember.Component.extend({
           dragImage = true;
 
           this.set('_dragGroup', children);
-        } else if (isSection) {
-          this.set('_nestingEnabled', false);
         }
 
         // reset the screenX when starting a drag, it will be used as the
@@ -239,8 +289,9 @@ export default Ember.Component.extend({
       const dragged = this.get('_draggedEl');
       const draggedEl = Ember.$(dragged);
       const isSame = this.get('_isSame');
+      const isSection = this._itemForNode(dragged).get('isSection');
 
-      if (isSame) {
+      if (isSame && !isSection) {
         if (this.get('nestingAllowed')) {
           // indent/outdent
           const screenX = this.get('_screenX');
@@ -272,7 +323,7 @@ export default Ember.Component.extend({
     // browser, and they do it differently so this can cause bottlenecks. Do
     // the least amount of work possible, and return if anything is amiss,
     // as the next event will clear it up. Unfortunately we have to handle
-    // border management and indenting/outdenting from here. Only apply rendering
+    // border management from here. Only apply rendering
     // changes if you have to (they are more expensive than the checks).
     this.$().on('dragover.karbonsortable', (event) => {
       // prevent default to allow drop
@@ -283,6 +334,7 @@ export default Ember.Component.extend({
 
       // Make sure we got one, in case they were able to drop somewhere else (css bug)
       if (droppable.length === 1) {
+        const dropItem = this._itemForNode(droppable);
         const dragged = this.get('_draggedEl');
         const draggedItem = this._itemForNode(dragged);
         const draggedIndex = this.get('data').indexOf(draggedItem);
@@ -290,6 +342,7 @@ export default Ember.Component.extend({
         const index = this.get('data').indexOf(dataItem);
         const isSame = (index === draggedIndex);
         const isSection = draggedItem.get('isSection');
+        const up = index < draggedIndex;
 
         this.set('_isSame', isSame);
 
@@ -319,6 +372,66 @@ export default Ember.Component.extend({
               }
             }
           }
+        } else if (!isSame && isSection && dropItem) {
+          // we're dragging a section, but we need to know what we're over
+          const draggedSectionId = draggedItem.get('id');
+
+          if (dropItem.get('isSection')) {
+            if (dropItem.get('sectionIsCollapsed')) {
+              if (!up) {
+                this._applyClasses(droppable, ['droppable--above'], ['droppable--below']);
+              } else {
+                this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
+              }
+            } else {
+              // this sucks
+              //
+              // if we are over a section item that is not us, and it is expanded,
+              // put the border on the last item in the section
+              //
+              // We can't count on there being another section - btw, this is a bug
+              // in the current implementation...
+              //
+
+              if (!up) {
+                // border goes on last item in section
+                const lastItemId = this._lastItemInSection(dropItem).get('id');
+
+                // need the node for this item
+                const lastNode = this.$("[data-pkid='" + lastItemId + "']");
+
+                this.set('_lastSectionNode', lastNode);
+                this._applyClasses(lastNode, ['droppable--above'], ['droppable--below']);
+              } else {
+                // goes on section header
+                const sectionNode = this.$("[data-pkid='" + dropItem.get('id') + "']");
+
+                this.set('_lastSectionNode', sectionNode);
+                this._applyClasses(sectionNode, ['droppable--below'], ['droppable--above']);
+              }
+            }
+          } else {
+            // we're over an item, is it in our section?
+            const mySectionId = this._getSectionId(dropItem);
+
+            if (mySectionId !== draggedSectionId) {
+              if (!up) {
+                // border goes on last item in section
+                const lastItemId = this._lastItemInSection(dropItem).get('id');
+
+                // need the node for this item
+                const lastNode = this.$("[data-pkid='" + lastItemId + "']");
+
+                this.set('_lastSectionNode', lastNode);
+                this._applyClasses(lastNode, ['droppable--above'], ['droppable--below']);
+              } else {
+                const sectionNode = this.$("[data-pkid='" + mySectionId + "']");
+                // poor name
+                this.set('_lastSectionNode', sectionNode);
+                this._applyClasses(sectionNode, ['droppable--below'], ['droppable--above']);
+              }
+            }
+          }
         }
       }
     });
@@ -341,6 +454,13 @@ export default Ember.Component.extend({
 
           if (next) {
             this._applyClasses(next, null, ['spacer']);
+          }
+
+          const lastSectionNode = this.get('_lastSectionNode');
+
+          if (lastSectionNode) {
+            this._applyClasses(lastSectionNode, ['droppable--below', 'droppable--above'], ['spacer']);
+            this.set('_lastSectionNode', null);
           }
         }
       }
