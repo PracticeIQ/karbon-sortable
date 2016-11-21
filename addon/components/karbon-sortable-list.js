@@ -106,6 +106,25 @@ export default Ember.Component.extend({
     return children;
   },
 
+  _getHiddenChildren: function(dataItem) {
+    let children = [];
+    const data = this.get('data');
+    const index = data.indexOf(dataItem);
+
+    if (dataItem.get('isSection') && dataItem.get('sectionIsCollapsed')) {
+      for (let i = index + 1; i < data.get('length'); i++) {
+        const nextItem = data.objectAt(i);
+        if (nextItem.get('isSection')) {
+          break;
+        }
+
+        children.push(nextItem);
+      }
+    }
+
+    return children;
+  },
+
   // this gets called a lot, avoid rescans in callbacks, just
   // use a flat scan
   _lastItemInSection: function(sectionItem) {
@@ -585,6 +604,14 @@ export default Ember.Component.extend({
         }
 
         const children = this.get('_dragGroup');
+        let hiddenChildren;
+
+        if (isSection && draggedDataItem.get('sectionIsCollapsed')) {
+          // when we move a collapsed section, we don't have to deal with the children
+          // visually, but we need to make sure we move them in the backing list.
+          hiddenChildren = this._getHiddenChildren(draggedDataItem);
+        }
+
 
         // move stuff around and animate
         if (!isSame) {
@@ -604,28 +631,43 @@ export default Ember.Component.extend({
             data.removeAt(oldDataIndex);
             data.insertAt(newDataIndex, draggedDataItem);
 
-            if (children) {
+            if (children && children.length) {
               for (let i = 1; i <= children.length; i++) {
                 let child = data.objectAt(oldDataIndex + i);
 
                 data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
-            }
+            } else if (hiddenChildren) {
+              for (let i = 1; i <= hiddenChildren.length; i++) {
+                let child = data.objectAt(oldDataIndex + i);
 
+                data.removeAt(oldDataIndex + i);
+                data.insertAt(newDataIndex + i, child);
+              }
+
+              hiddenChildren = null;
+            }
           } else {
             // If dragging down, we can insert the new, but have to wait to
             // remove the old until it's animated away
             data.insertAt(newDataIndex + 1, draggedDataItem);
 
-            if (children) {
+            if (children && children.length) {
               for (let i = 1; i <= children.length; i++) {
                 let child = data.objectAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + 1 + i, child);
               }
 
+            } else if (hiddenChildren && hiddenChildren.length) {
+              for (let i = 1; i <= hiddenChildren.length; i++) {
+                let child = data.objectAt(oldDataIndex + i);
+
+                data.insertAt(newDataIndex + i + 1, child);
+              }
             }
           }
+
 
 
           // Fire animations after the render from data moves has completed
@@ -677,6 +719,17 @@ export default Ember.Component.extend({
                     orig.css('height', '');
                     // note, this fires for every el animated out, which will take care of each of the children
                     data.removeAt(oldDataIndex);
+
+                    // hidden children aren't shown, so they don't animate out, we've added them down, now need
+                    // to remove the old references
+                    if (hiddenChildren && hiddenChildren.length) {
+                      for (let i = 0; i < hiddenChildren.length; i++) {
+                        let child = data.objectAt(oldDataIndex);
+
+                        data.removeAt(oldDataIndex);
+                      }
+
+                    }
                   });
                 }
 
