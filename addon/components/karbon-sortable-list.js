@@ -123,7 +123,7 @@ export default Ember.Component.extend({
     }
   },
 
-  _getSectionId: function(item) {
+  _getSectionItem: function(item) {
     const data = this.get('data');
     const myIndex = data.indexOf(item);
 
@@ -131,7 +131,7 @@ export default Ember.Component.extend({
       for (let i = myIndex - 1; i >= 0; i--) {
         const nextObject = data.objectAt(i);
         if (nextObject.get('isSection')) {
-          return nextObject.get('id');
+          return nextObject;
         }
       }
     }
@@ -188,11 +188,9 @@ export default Ember.Component.extend({
           // We are dragging a group, so normal nesting rules do not apply
           this.set('_nestingEnabled', false);
 
-//          Ember.$(event.target).removeClass('droppable');
-
           children.forEach( (child) => {
             let childEl = Ember.$(child);
- //           this._applyClasses(childEl, ['droppable'], ['dragging']);
+
             this._applyClasses(childEl, null, ['dragging']);
           });
 
@@ -332,7 +330,7 @@ export default Ember.Component.extend({
       const item = Ember.$(event.target);
       const droppable = item.closest('.droppable');
 
-      // Make sure we got one, in case they were able to drop somewhere else (css bug)
+      // Make sure we got one, in case they were able to drop somewhere else
       if (droppable.length === 1) {
         const dropItem = this._itemForNode(droppable);
         const dragged = this.get('_draggedEl');
@@ -377,6 +375,7 @@ export default Ember.Component.extend({
           const draggedSectionId = draggedItem.get('id');
 
           if (dropItem.get('isSection')) {
+            // We're over a section, is it collapsed?
             if (dropItem.get('sectionIsCollapsed')) {
               if (!up) {
                 this._applyClasses(droppable, ['droppable--above'], ['droppable--below']);
@@ -384,7 +383,6 @@ export default Ember.Component.extend({
                 this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
               }
             } else {
-              // this sucks
               //
               // if we are over a section item that is not us, and it is expanded,
               // put the border on the last item in the section
@@ -412,7 +410,7 @@ export default Ember.Component.extend({
             }
           } else {
             // we're over an item, is it in our section?
-            const mySectionId = this._getSectionId(dropItem);
+            const mySectionId = this._getSectionItem(dropItem).get('id');
 
             if (mySectionId !== draggedSectionId) {
               if (!up) {
@@ -468,7 +466,7 @@ export default Ember.Component.extend({
 
     //
     // On drop we need to cleanup the borders, and animate the changes. Nesting
-    // and the 50/50 rule really complicate things.
+    // and the 50/50 rule really complicate things, as do sections.
     //
     // For the 50/50 rule, we have to adjust the target drop index depending on
     // whether we are dragging down or up, and whether the drop is above or
@@ -500,28 +498,80 @@ export default Ember.Component.extend({
         const oldIndex = Ember.$(dragged).index();
         let newIndex = Ember.$(droppable).index();
 
-
+        const up = oldIndex > newIndex;
+        const isSection = draggedDataItem.get('isSection');
         let isChild = draggedDataItem.get('isChild');
 
-        // Because we insert above or below based on whether you are on the
-        // top or bottom half of the drop target, we have to adjust the insertion
-        // indices (we insertAt into the list)
-        if (oldIndex < newIndex) {
-          // dragging down
-          // below is fine, above needs - 1
-          if (droppable.hasClass('droppable--above')) {
-            newIndex = newIndex - 1;
-            newDataIndex = newDataIndex - 1;
+        if (!isSection) {
+          // Because we insert above or below based on whether you are on the
+          // top or bottom half of the drop target, we have to adjust the insertion
+          // indices (we insertAt into the list)
+          if (!up) {
+            // dragging down
+            // below is fine, above needs - 1
+            if (droppable.hasClass('droppable--above')) {
+              newIndex = newIndex - 1;
+              newDataIndex = newDataIndex - 1;
+            }
+          } else if (up) {
+            // dragging up
+            // above is fine, below needs + 1
+            if (droppable.hasClass('droppable--below')) {
+              newIndex = newIndex + 1;
+              newDataIndex = newDataIndex + 1;
+            }
           }
-        } else if (oldIndex > newIndex) {
-          // dragging up
-          // above is fine, below needs + 1
-          if (droppable.hasClass('droppable--below')) {
-            newIndex = newIndex + 1;
-            newDataIndex = newDataIndex + 1;
-          }
+        } else {
+          // For sections, the drop index needs to line up on a section, even
+          // though you may have dropped on an item
+          if (droppedDataItem.get('isSection')) {
+            if (droppedDataItem.get('sectionIsCollapsed')) {
+              if (up) {
+                // fine
+              } else {
+                // newIndex is fine, but the items are hidden, adjust the dataindex
+                const lastItem = this._lastItemInSection(droppedDataItem);
+                newDataIndex = data.indexOf(lastItem);
+              }
+            } else {
+              if (up) {
+                // fine
+              } else {
+                const lastItem = this._lastItemInSection(droppedDataItem);
+                newDataIndex = data.indexOf(lastItem);
 
+                const lastNode = this.$("[data-pkid='" + lastItem.get('id') + "']");
+                newIndex = lastNode.index();
+
+                // this one slips through because it's not the drop target
+                this._applyClasses(lastNode, ['droppable--below'], null);
+              }
+            }
+          } else {
+            const draggedSectionId = draggedDataItem.get('id');
+            const mySectionItem = this._getSectionItem(droppedDataItem);
+            const mySectionId = mySectionItem.get('id');
+
+            if (mySectionId !== draggedSectionId) {
+              if (up) {
+                const sectionNode = this.$("[data-pkid='" + mySectionId + "']");
+                newIndex = sectionNode.index();
+                newDataIndex = data.indexOf(mySectionItem);
+
+                this._applyClasses(sectionNode, ['droppable--above'], null);
+              } else {
+                const lastItem = this._lastItemInSection(droppedDataItem);
+                newDataIndex = data.indexOf(lastItem);
+
+                const lastNode = this.$("[data-pkid='" + lastItem.get('id') + "']");
+                newIndex = lastNode.index();
+
+                this._applyClasses(lastNode, ['droppable--below'], null);
+              }
+            }
+          }
         }
+
 
         const isSame = (oldIndex === newIndex);
 
@@ -549,7 +599,7 @@ export default Ember.Component.extend({
             });
           }
 
-          if (newIndex < oldIndex) {
+          if (up) {
             // If dragging up, we can remove the old and insert the new
             data.removeAt(oldDataIndex);
             data.insertAt(newDataIndex, draggedDataItem);
@@ -581,7 +631,7 @@ export default Ember.Component.extend({
           // Fire animations after the render from data moves has completed
           Ember.run.scheduleOnce('afterRender', () => {
             if (this && !this.get('isDestroyed')) {
-              if (oldIndex > newIndex) {
+              if (up) {
                 // drag up
                 let target;
 
@@ -608,13 +658,16 @@ export default Ember.Component.extend({
                 let target, orig;
 
                 if (children) {
-                  orig = this.$('.droppable:gt(' + (oldIndex - 1) + '):lt(' + (children.length + 1) +')');
+                  if (oldIndex === 0) {
+                    orig = this.$('.droppable:gt(' + (oldIndex) + '):lt(' + (children.length + 1) +')');
+                  } else {
+                    orig = this.$('.droppable:gt(' + (oldIndex - 1) + '):lt(' + (children.length + 1) +')');
+                  }
                   target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
                 } else {
                   orig = this.$('.droppable:eq(' + (oldIndex) + ')');
                   target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
                 }
-
 
                 if (orig) {
                   // animate original out
@@ -622,6 +675,7 @@ export default Ember.Component.extend({
                     height: '0px'
                   }, 500, () => {
                     orig.css('height', '');
+                    // note, this fires for every el animated out, which will take care of each of the children
                     data.removeAt(oldDataIndex);
                   });
                 }
