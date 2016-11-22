@@ -751,14 +751,19 @@ export default Ember.Component.extend({
 
           this.set('_dragGroup', null);
 
-          const childCount = (children) ? children.length : 0;
+          let childCount = (children) ? children.length : 0;
+          if (childCount === 0) {
+            if (hiddenChildren && hiddenChildren.length) {
+              childCount = hiddenChildren.length;
+            }
+          }
 
           // If we're dragging a group down, the new index will be off because
           // of the order we have to do things to make the animations work. We
           // fix/adjust it here
           let adjustedIndex = newDataIndex;
-          if (children && (oldDataIndex < newDataIndex)) {
-            adjustedIndex = newDataIndex - children.length;
+          if (childCount && (oldDataIndex < newDataIndex)) {
+            adjustedIndex = newDataIndex - childCount;
           }
 
 
