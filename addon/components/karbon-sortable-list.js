@@ -214,7 +214,7 @@ export default Ember.Component.extend({
           });
 
           try {
-            event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 25, 25);
+            event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 140, 25);
           } catch(e) {
             // ie doesn't like setDragImage
           }
@@ -232,7 +232,7 @@ export default Ember.Component.extend({
 
       if (!dragImage) {
         try {
-          event.dataTransfer.setDragImage(document.getElementById('dragSingleImage'), 15, 15);
+          event.dataTransfer.setDragImage(document.getElementById('dragSingleImage'), 140, 25);
         } catch (e) {
           // ie doesn't like setDragImage
         }
