@@ -725,21 +725,20 @@ export default Ember.Component.extend({
                   orig.animate({
                     height: '0px'
                   }, 500, () => {
-                    orig.css('height', '');
                     // note, this fires for every el animated out, which will take care of each of the children
-
+                    data.removeAt(oldDataIndex);
                     Ember.run.next( () => {
-                      data.removeAt(oldDataIndex);
-
-                      // hidden children aren't shown, so they don't animate out, we've added them down, now need
-                      // to remove the old references
-                      if (hiddenChildren && hiddenChildren.length) {
-                        for (let i = 0; i < hiddenChildren.length; i++) {
-                          data.removeAt(oldDataIndex);
-                        }
-
-                      }
+                      orig.css('height', '');
                     });
+
+                    // hidden children aren't shown, so they don't animate out, we've added them down, now need
+                    // to remove the old references
+                    if (hiddenChildren && hiddenChildren.length) {
+                      for (let i = 0; i < hiddenChildren.length; i++) {
+                        data.removeAt(oldDataIndex);
+                      }
+
+                    }
                   });
                 }
 
@@ -783,8 +782,7 @@ export default Ember.Component.extend({
 
           Ember.run.later( () => {
             this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, isChild, childCount);
-          }, 1000);
-
+          }, 800);
         }
       }
     });
