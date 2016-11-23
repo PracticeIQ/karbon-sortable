@@ -214,7 +214,10 @@ export default Ember.Component.extend({
           });
 
           try {
-            event.dataTransfer.setDragImage(document.getElementById('dragGroupImage'), 140, 25);
+            const dragImageEl = document.getElementById('dragGroupImage');
+            const width = Ember.$(dragImageEl).width();
+            const height = Ember.$(dragImageEl).height();
+            event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
           } catch(e) {
             // ie doesn't like setDragImage
           }
@@ -232,7 +235,11 @@ export default Ember.Component.extend({
 
       if (!dragImage) {
         try {
-          event.dataTransfer.setDragImage(document.getElementById('dragSingleImage'), 140, 25);
+          const dragImageEl = document.getElementById('dragSingleImage');
+          const width = Ember.$(dragImageEl).width();
+          const height = Ember.$(dragImageEl).height();
+
+          event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
         } catch (e) {
           // ie doesn't like setDragImage
         }
@@ -245,7 +252,9 @@ export default Ember.Component.extend({
       if (event.dataTransfer.dropEffect) {
           const droppable = Ember.$(event.target);
 
-          droppable.removeClass('dragging');
+          Ember.run.later( () => {
+            droppable.removeClass('dragging');
+          }, 500);
       }
 
       const children = this.get('_dragGroup');
@@ -256,7 +265,7 @@ export default Ember.Component.extend({
             this._applyClasses(childEl, ['dragging'], ['droppable']);
           });
         }
-      }, 200);
+      }, 500);
 
       // we have to handle indenting/outdenting here, because you can drop outside
       // the target to change the indentation
@@ -619,11 +628,11 @@ export default Ember.Component.extend({
             // reset the children before we starting moving things
             Ember.$(dragged).addClass('droppable');
 
-            children.forEach( (child) => {
-              let childEl = Ember.$(child);
-              childEl.removeClass('dragging');
-              childEl.addClass('droppable');
-            });
+            Ember.run.later( () => {
+              children.forEach( (child) => {
+                this._applyClasses(child, ['dragging'], ['droppable']);
+              });
+            }, 500);
           }
 
           if (up) {
@@ -716,16 +725,16 @@ export default Ember.Component.extend({
                   orig.animate({
                     height: '0px'
                   }, 500, () => {
-                    orig.css('height', '');
                     // note, this fires for every el animated out, which will take care of each of the children
                     data.removeAt(oldDataIndex);
+                    Ember.run.next( () => {
+                      orig.css('height', '');
+                    });
 
                     // hidden children aren't shown, so they don't animate out, we've added them down, now need
                     // to remove the old references
                     if (hiddenChildren && hiddenChildren.length) {
                       for (let i = 0; i < hiddenChildren.length; i++) {
-                        let child = data.objectAt(oldDataIndex);
-
                         data.removeAt(oldDataIndex);
                       }
 
@@ -773,7 +782,7 @@ export default Ember.Component.extend({
 
           Ember.run.later( () => {
             this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, isChild, childCount);
-          }, 1000);
+          }, 800);
         }
       }
     });
