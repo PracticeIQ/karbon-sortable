@@ -474,7 +474,7 @@ export default Ember.Component.extend({
 
       if (droppable.length === 1) {
         if (!isSame) {
-          this._applyClasses(droppable, ['droppable--below', 'droppable--above'], ['spacer']);
+          this._applyClasses(droppable, ['droppable--below', 'droppable--above', 'nesting'], ['spacer']);
 
           const next = Ember.$(droppable).next();
 
@@ -488,6 +488,8 @@ export default Ember.Component.extend({
             this._applyClasses(lastSectionNode, ['droppable--below', 'droppable--above'], ['spacer']);
             this.set('_lastSectionNode', null);
           }
+        } else {
+          this._applyClasses(droppable, ['nesting'], null);
         }
       }
     });
