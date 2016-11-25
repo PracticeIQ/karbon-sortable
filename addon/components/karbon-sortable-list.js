@@ -552,9 +552,15 @@ export default Ember.Component.extend({
             }
           }
         } else {
+          const draggedSectionId = draggedDataItem.get('id');
+
           // For sections, the drop index needs to line up on a section, even
           // though you may have dropped on an item
           if (droppedDataItem.get('isSection')) {
+
+            // if you drop on yourself (section) ignore
+            if (draggedSectionId === droppedDataItem.get('id')) return;
+
             if (droppedDataItem.get('sectionIsCollapsed')) {
               if (up) {
                 // fine
@@ -578,9 +584,11 @@ export default Ember.Component.extend({
               }
             }
           } else {
-            const draggedSectionId = draggedDataItem.get('id');
             const mySectionItem = this._getSectionItem(droppedDataItem);
             const mySectionId = mySectionItem.get('id');
+
+            console.log('mySectionId: ', mySectionId,
+                        ' draggedSectionId: ', draggedSectionId);
 
             if (mySectionId !== draggedSectionId) {
               if (up) {
@@ -598,6 +606,8 @@ export default Ember.Component.extend({
 
                 this._applyClasses(lastNode, ['droppable--below'], null);
               }
+            } else {
+              return;
             }
           }
         }
