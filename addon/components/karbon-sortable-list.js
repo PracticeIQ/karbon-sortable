@@ -573,7 +573,9 @@ export default Ember.Component.extend({
           if (droppedDataItem.get('isSection')) {
 
             // if you drop on yourself (section) ignore
-            if (draggedSectionId === droppedDataItem.get('id')) return;
+            if (draggedSectionId === droppedDataItem.get('id')) {
+              return;
+            }
 
             if (droppedDataItem.get('sectionIsCollapsed')) {
               if (up) {
