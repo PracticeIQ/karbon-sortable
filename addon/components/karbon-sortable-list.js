@@ -705,7 +705,7 @@ export default Ember.Component.extend({
                 data.insertAt(newDataIndex + i, child);
               }
 
-              hiddenChildren = null;
+          //    hiddenChildren = null;
             }
           } else {
             // If dragging down, we can insert the new, but have to wait to
