@@ -208,61 +208,65 @@ export default Ember.Component.extend({
     return this.get('canNest') && this.get('_nestingEnabled');
   }),
 
+  _grabChildren: function(el, item, release) {
+    if (release) {
+      let children = this.get('_dragGroup');
+
+      if (children) {
+        children.forEach( (child) => {
+          let childEl = Ember.$(child);
+
+          this._applyClasses(childEl, ['dragging'], null);
+        });
+      }
+
+      this.set('_dragGroup', null);
+      this.set('_nestingEnabled', true);
+    } else {
+      let children = this._getChildren(el);
+
+      // We are dragging a group, so normal nesting rules do not apply
+      this.set('_nestingEnabled', false);
+
+      children.forEach( (child) => {
+        let childEl = Ember.$(child);
+
+        this._applyClasses(childEl, null, ['dragging']);
+      });
+
+      this.set('_dragGroup', children);
+    }
+  },
+
   didInsertElement() {
     this.$().on('dragstart.karbonsortable', (event) => {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.dropEffect = 'move';
 
-      let dragImage = false;
-
       this.set('_draggedEl', event.target);
       if (this.get('nestingAllowed')) {
         this.set('_dragGroup', null);
-        let children = this._getChildren(event.target);
-        const dataItem = this._itemForNode(event.target);
 
+        const dataItem = this._itemForNode(event.target);
         const isSection = dataItem.get('isSection');
 
-        if (isSection || (children.length > 0 && (event.ctrlKey || event.metaKey))) {
-          // We are dragging a group, so normal nesting rules do not apply
-          this.set('_nestingEnabled', false);
-
-          children.forEach( (child) => {
-            let childEl = Ember.$(child);
-
-            this._applyClasses(childEl, null, ['dragging']);
-          });
-
-          try {
-            const dragImageEl = document.getElementById('dragGroupImage');
-            const width = Ember.$(dragImageEl).width();
-            const height = Ember.$(dragImageEl).height();
-            event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
-          } catch(e) {
-            // ie doesn't like setDragImage
-          }
-
-          dragImage = true;
-
-          this.set('_dragGroup', children);
+        if (isSection) {
+          this._grabChildren(event.target, dataItem);
         }
 
         // reset the screenX when starting a drag, it will be used as the
         // basis for detecting deltaX
         this.set('_screenX', null);
-
       }
 
-      if (!dragImage) {
-        try {
-          const dragImageEl = document.getElementById('dragSingleImage');
-          const width = Ember.$(dragImageEl).width();
-          const height = Ember.$(dragImageEl).height();
+      try {
+        const dragImageEl = document.getElementById('dragSingleImage');
+        const width = Ember.$(dragImageEl).width();
+        const height = Ember.$(dragImageEl).height();
 
-          event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
-        } catch (e) {
-          // ie doesn't like setDragImage
-        }
+        event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
+      } catch (e) {
+        // ie doesn't like setDragImage
       }
 
       event.target.classList.add('dragging');
@@ -389,6 +393,18 @@ export default Ember.Component.extend({
         const isSame = (index === draggedIndex);
         const isSection = draggedItem.get('isSection');
         const up = index < draggedIndex;
+
+        const oldIsSame = this.get('_isSame');
+
+        if (isSame !== oldIsSame) {
+          if (isSame) {
+            // transition to indenting
+            this._grabChildren(dragged, draggedItem, true);
+          } else {
+            // transition to dragging
+            this._grabChildren(dragged, draggedItem);
+          }
+        }
 
         this.set('_isSame', isSame);
 
@@ -704,8 +720,6 @@ export default Ember.Component.extend({
                 data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
-
-          //    hiddenChildren = null;
             }
           } else {
             // If dragging down, we can insert the new, but have to wait to
