@@ -855,7 +855,6 @@ export default Ember.Component.extend({
   willDestroyElement() {
     this.$().off('dragstart.karbonsortable');
     this.$().off('dragend.karbonsortable');
-    this.$().off('dragenter.karbonsortable');
     this.$().off('dragover.karbonsortable');
     this.$().off('dragleave.karbonsortable');
     this.$().off('drop.karbonsortable');

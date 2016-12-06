@@ -15,7 +15,7 @@ export default Ember.Component.extend({
   layout,
 
   didInsertElement() {
-    // We don't need to pass any data (yet), but FF won't drag unless this is set
-    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', 'text')");
+    // Dropwells grab the id from here on a drop
+    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', " + this.get('pkid') +  ")");
   }
 });

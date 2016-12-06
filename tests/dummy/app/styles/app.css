@@ -138,3 +138,24 @@ li.nested {
   position: absolute;
   left: -200px
 }
+
+/*
+ * Drop wells
+ */
+
+.drops {
+  display: flex;
+}
+
+.dropwell {
+  width: 120px;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin: 0 12px;
+  text-align: center;
+  background-color: #cccc33;
+}
+
+.dropwell.dragover {
+  background-color: #fefefe;
+}
