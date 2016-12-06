@@ -7,7 +7,7 @@ export default Ember.Component.extend({
   classNameBindings: ['handleClass', 'isSection:section', 'isNested:nested'],
   attributeBindings: ['draggable', 'pkid:data-pkid'],
   handleClass: 'droppable',
-  // temporary
+
   draggable: true,
   isSection: Ember.computed.alias('data.isSection'),
   isNested: Ember.computed.alias('data.isChild'),
