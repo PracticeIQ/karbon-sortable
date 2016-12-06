@@ -16,6 +16,6 @@ export default Ember.Component.extend({
 
   didInsertElement() {
     // Dropwells grab the id from here on a drop
-    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', " + this.get('pkid') +  ")");
+    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', '" + this.get('pkid') +  "')");
   }
 });

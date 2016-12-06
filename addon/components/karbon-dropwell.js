@@ -6,27 +6,42 @@ export default Ember.Component.extend({
   classNames: ['dropwell'],
   classNameBindings: ['dragover'],
   dragover: false,
+  disable: function() {
+    const selected = this.get('selected');
+
+    return selected === this.get('data');
+  }.property('selected'),
 
   didInsertElement() {
     this.$().on('dragenter.karbondropwell', (event) => {
-      this.set('dragover', true);
+      if (!this.get('disable')) {
+        this.set('dragover', true);
+      }
     });
 
     this.$().on('dragover.karbondropwell', (event) => {
-      event.preventDefault();
+      if (!this.get('disable')) {
+        event.preventDefault();
+
+        this.set('dragover', true);
+      }
     });
 
     this.$().on('dragleave.karbondropwell', (event) => {
-      this.set('dragover', false);
+      if (!this.get('disable')) {
+        this.set('dragover', false);
+      }
     });
 
     this.$().on('drop.karbondropwell', (event) => {
-      this.set('dragover', false);
+      if (!this.get('disable')) {
+        this.set('dragover', false);
 
-      const dropWellId = this.get('data');
-      const droppedItemId = event.dataTransfer.getData('text');
+        const dropWellId = this.get('data');
+        const droppedItemId = event.dataTransfer.getData('text');
 
-      this.get('onDropOnWell')(dropWellId, droppedItemId);
+        this.get('onDropOnWell')(dropWellId, droppedItemId);
+      }
     });
   },
 
