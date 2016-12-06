@@ -26,9 +26,8 @@ export default Ember.Component.extend({
       const dropWellId = this.get('data');
       const droppedItemId = event.dataTransfer.getData('text');
 
-      this.sendAction('dropOnWell', dropWellId, droppedItemId);
+      this.get('onDropOnWell')(dropWellId, droppedItemId);
     });
-
   },
 
   willDestroyElement() {
