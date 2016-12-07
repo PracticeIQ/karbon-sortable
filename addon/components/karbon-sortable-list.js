@@ -30,6 +30,7 @@ export default Ember.Component.extend({
   _isSame: false,
   _isSection: false,
   _lastSectionNode: null,
+  _isPinned: false,
 
   // When dragging parents and children, keep the data here
   _dragGroup: null,
@@ -240,6 +241,23 @@ export default Ember.Component.extend({
     }
   },
 
+  _amIPinned: function(dataItem) {
+    const data = this.get('data');
+    const myIndex = data.indexOf(dataItem);
+
+    if (myIndex === 0) return true;
+
+    const mySection = this._getSectionItem(dataItem);
+
+    if (mySection) {
+      const sectionIndex = data.indexOf(mySection);
+
+      if (myIndex === (sectionIndex + 1)) return true;
+    }
+
+    return false;
+  },
+
   didInsertElement() {
     this.$().on('dragstart.karbonsortable', (event) => {
       event.dataTransfer.effectAllowed = 'move';
@@ -251,6 +269,7 @@ export default Ember.Component.extend({
 
       if (this.get('nestingAllowed')) {
         this.set('_dragGroup', null);
+        this.set('_isPinned', false);
 
         const isSection = dataItem.get('isSection');
 
@@ -258,6 +277,8 @@ export default Ember.Component.extend({
 
         if (isSection) {
           this._grabChildren(event.target, dataItem);
+        } else {
+          this.set('_isPinned', this._amIPinned(dataItem));
         }
 
         // reset the screenX when starting a drag, it will be used as the
@@ -346,8 +367,9 @@ export default Ember.Component.extend({
       const draggedEl = Ember.$(dragged);
       const isSame = this.get('_isSame');
       const isSection = this.get('_isSection');
+      const isPinned = this.get('_isPinned');
 
-      if (isSame && !isSection) {
+      if (isSame && !isSection && !isPinned) {
         if (this.get('nestingAllowed')) {
           // indent/outdent
           const screenX = this.get('_screenX');
@@ -402,10 +424,12 @@ export default Ember.Component.extend({
         const isSection = this.get('_isSection');
         const up = index < draggedIndex;
 
+        const isPinned = this.get('_isPinned');
+
         const oldIsSame = this.get('_isSame');
 
         if (isSame !== oldIsSame) {
-          if (isSame) {
+          if (isSame && !isPinned) {
             // transition to indenting
             this._grabChildren(dragged, draggedItem, true);
           } else {
