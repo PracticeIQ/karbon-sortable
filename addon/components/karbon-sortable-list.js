@@ -240,10 +240,6 @@ export default Ember.Component.extend({
     }
   },
 
-  _sendDrag: function(evt) {
-    this.get('dragged')(evt);
-  },
-
   didInsertElement() {
     this.$().on('dragstart.karbonsortable', (event) => {
       event.dataTransfer.effectAllowed = 'move';
@@ -377,8 +373,6 @@ export default Ember.Component.extend({
           }
         }
       }
-
-      Ember.run.throttle(this, this._sendDrag, event, 150);
     });
 
     // dragover fires on the drop element as you drag, throttling is up to the
