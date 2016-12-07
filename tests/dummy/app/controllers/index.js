@@ -32,6 +32,10 @@ export default Ember.Controller.extend({
       }
 
       item.set('sectionIsCollapsed', !isCollapsed);
+    },
+
+    dropOnWell: function(wellId, itemId) {
+      console.log('wellId: ', wellId, ' itemId: ', itemId);
     }
   }
 });

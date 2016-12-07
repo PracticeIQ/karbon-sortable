@@ -20,6 +20,7 @@ export default Ember.Component.extend({
 
   // The DOM element being dragged
   _draggedEl: null,
+  _draggedItem: null,
   // The initial screenX position at the beginning of a drag
   _screenX: null,
 
@@ -27,6 +28,7 @@ export default Ember.Component.extend({
   // of the canNest user setting
   _nestingEnabled: true,
   _isSame: false,
+  _isSection: false,
   _lastSectionNode: null,
 
   // When dragging parents and children, keep the data here
@@ -244,11 +246,15 @@ export default Ember.Component.extend({
       event.dataTransfer.dropEffect = 'move';
 
       this.set('_draggedEl', event.target);
+      const dataItem = this._itemForNode(event.target);
+      this.set('_draggedItem', dataItem);
+
       if (this.get('nestingAllowed')) {
         this.set('_dragGroup', null);
 
-        const dataItem = this._itemForNode(event.target);
         const isSection = dataItem.get('isSection');
+
+        this.set('_isSection', isSection);
 
         if (isSection) {
           this._grabChildren(event.target, dataItem);
@@ -339,7 +345,8 @@ export default Ember.Component.extend({
       const dragged = this.get('_draggedEl');
       const draggedEl = Ember.$(dragged);
       const isSame = this.get('_isSame');
-      const isSection = this._itemForNode(dragged).get('isSection');
+//      const isSection = this._itemForNode(dragged).get('isSection');
+      const isSection = this.get('_isSection');
 
       if (isSame && !isSection) {
         if (this.get('nestingAllowed')) {
@@ -386,12 +393,14 @@ export default Ember.Component.extend({
       if (droppable.length === 1) {
         const dropItem = this._itemForNode(droppable);
         const dragged = this.get('_draggedEl');
-        const draggedItem = this._itemForNode(dragged);
+//        const draggedItem = this._itemForNode(dragged);
+        const draggedItem = this.get('_draggedItem');
         const draggedIndex = this.get('data').indexOf(draggedItem);
-        const dataItem = this._itemForNode(droppable);
-        const index = this.get('data').indexOf(dataItem);
+//        const dataItem = this._itemForNode(droppable);
+        const index = this.get('data').indexOf(dropItem);
         const isSame = (index === draggedIndex);
-        const isSection = draggedItem.get('isSection');
+//        const isSection = draggedItem.get('isSection');
+        const isSection = this.get('_isSection');
         const up = index < draggedIndex;
 
         const oldIsSame = this.get('_isSame');
@@ -549,8 +558,10 @@ export default Ember.Component.extend({
         const clientHeight = Ember.$(droppable).height();
         const data = this.get('data');
         const dragged = this.get('_draggedEl');
-        const draggedDataItem = this._itemForNode(dragged);
+        //const draggedDataItem = this._itemForNode(dragged);
+        const draggedDataItem = this.get('_draggedItem');
         const droppedDataItem = this._itemForNode(droppable);
+
 
         const oldDataIndex = data.indexOf(draggedDataItem);
         let newDataIndex = data.indexOf(droppedDataItem);
@@ -559,7 +570,8 @@ export default Ember.Component.extend({
         let newIndex = Ember.$(droppable).index();
 
         const up = oldIndex > newIndex;
-        const isSection = draggedDataItem.get('isSection');
+//        const isSection = draggedDataItem.get('isSection');
+        const isSection = this.get('_isSection');
         let isChild = draggedDataItem.get('isChild');
 
         if (!isSection) {
@@ -855,7 +867,6 @@ export default Ember.Component.extend({
   willDestroyElement() {
     this.$().off('dragstart.karbonsortable');
     this.$().off('dragend.karbonsortable');
-    this.$().off('dragenter.karbonsortable');
     this.$().off('dragover.karbonsortable');
     this.$().off('dragleave.karbonsortable');
     this.$().off('drop.karbonsortable');

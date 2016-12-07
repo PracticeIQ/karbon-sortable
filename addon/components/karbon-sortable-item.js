@@ -7,7 +7,7 @@ export default Ember.Component.extend({
   classNameBindings: ['handleClass', 'isSection:section', 'isNested:nested'],
   attributeBindings: ['draggable', 'pkid:data-pkid'],
   handleClass: 'droppable',
-  // temporary
+
   draggable: true,
   isSection: Ember.computed.alias('data.isSection'),
   isNested: Ember.computed.alias('data.isChild'),
@@ -15,7 +15,7 @@ export default Ember.Component.extend({
   layout,
 
   didInsertElement() {
-    // We don't need to pass any data (yet), but FF won't drag unless this is set
-    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', 'text')");
+    // Dropwells grab the id from here on a drop
+    this.$().attr('ondragstart', "event.dataTransfer.setData('text/plain', '" + this.get('pkid') +  "')");
   }
 });
