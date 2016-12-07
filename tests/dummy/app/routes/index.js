@@ -43,6 +43,10 @@ const items = [
       isSection: false
     },
     {
+      name: 'Empty Section',
+      isSection: true
+    },
+    {
       name: 'Section 2',
       isSection: true
     },

@@ -414,18 +414,14 @@ export default Ember.Component.extend({
       if (droppable.length === 1) {
         const dropItem = this._itemForNode(droppable);
         const dragged = this.get('_draggedEl');
-//        const draggedItem = this._itemForNode(dragged);
         const draggedItem = this.get('_draggedItem');
         const draggedIndex = this.get('data').indexOf(draggedItem);
-//        const dataItem = this._itemForNode(droppable);
         const index = this.get('data').indexOf(dropItem);
         const isSame = (index === draggedIndex);
-//        const isSection = draggedItem.get('isSection');
         const isSection = this.get('_isSection');
         const up = index < draggedIndex;
 
         const isPinned = this.get('_isPinned');
-
         const oldIsSame = this.get('_isSame');
 
         if (isSame !== oldIsSame) {
@@ -494,9 +490,9 @@ export default Ember.Component.extend({
 
             if (!mySectionItem) {
               // We dragged over an item that is not in a section, only possible if the item is
-              // above all sections. Treat it as normal item
+              // above all sections. Not allowed to drop, don't set borders
 
-              this._itemBorders(droppable, event);
+//              this._itemBorders(droppable, event);
               return;
             }
 
@@ -581,7 +577,6 @@ export default Ember.Component.extend({
         const clientHeight = Ember.$(droppable).height();
         const data = this.get('data');
         const dragged = this.get('_draggedEl');
-        //const draggedDataItem = this._itemForNode(dragged);
         const draggedDataItem = this.get('_draggedItem');
         const droppedDataItem = this._itemForNode(droppable);
 
@@ -593,7 +588,6 @@ export default Ember.Component.extend({
         let newIndex = Ember.$(droppable).index();
 
         const up = oldIndex > newIndex;
-//        const isSection = draggedDataItem.get('isSection');
         const isSection = this.get('_isSection');
         let isChild = draggedDataItem.get('isChild');
 
@@ -655,24 +649,9 @@ export default Ember.Component.extend({
 
             if (!mySectionItem) {
               // we're dropping on an item that is not in a section, so it must
-              // be above all sections. Put the section exactly where it was dropped
+              // be above all sections. Not legal, ignore.
 
-              if (!up) {
-                // dragging down
-                // below is fine, above needs - 1
-                if (droppable.hasClass('droppable--above')) {
-                  newIndex = newIndex - 1;
-                  newDataIndex = newDataIndex - 1;
-                }
-              } else if (up) {
-                // dragging up
-                // above is fine, below needs + 1
-                if (droppable.hasClass('droppable--below')) {
-                  newIndex = newIndex + 1;
-                  newDataIndex = newDataIndex + 1;
-                }
-              }
-
+              return;
             } else {
 
               const mySectionId = mySectionItem.get('id');
