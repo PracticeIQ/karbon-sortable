@@ -17,6 +17,7 @@ export default Ember.Component.extend({
   canNest: false,
   // how many pixels do you have to drag horizontally to indent/outdent
   nestTolerance: 60,
+  animateSpeed: 5000,
 
   // The DOM element being dragged
   _draggedEl: null,
@@ -300,12 +301,14 @@ export default Ember.Component.extend({
     });
 
     this.$().on('dragend.karbonsortable', (event) => {
+      const ANIMATE_SPEED = this.get('animateSpeed');
+
       if (event.dataTransfer.dropEffect) {
           const droppable = Ember.$(event.target);
 
           Ember.run.later( () => {
             droppable.removeClass('dragging');
-          }, 500);
+          }, ANIMATE_SPEED);
       }
 
       const children = this.get('_dragGroup');
@@ -316,7 +319,7 @@ export default Ember.Component.extend({
             this._applyClasses(childEl, ['dragging'], ['droppable']);
           });
         }
-      }, 500);
+      }, ANIMATE_SPEED);
 
       // we have to handle indenting/outdenting here, because you can drop outside
       // the target to change the indentation
@@ -703,6 +706,9 @@ export default Ember.Component.extend({
 
 
         // move stuff around and animate
+
+        const ANIMATE_SPEED = this.get('animateSpeed');
+
         if (!isSame) {
           if (children) {
             // reset the children before we starting moving things
@@ -712,26 +718,26 @@ export default Ember.Component.extend({
               children.forEach( (child) => {
                 this._applyClasses(child, ['dragging'], ['droppable']);
               });
-            }, 500);
+            }, ANIMATE_SPEED);
           }
 
           if (up) {
             // If dragging up, we can remove the old and insert the new
-            data.removeAt(oldDataIndex);
+          //  data.removeAt(oldDataIndex);
             data.insertAt(newDataIndex, draggedDataItem);
 
             if (children && children.length) {
               for (let i = 1; i <= children.length; i++) {
                 let child = data.objectAt(oldDataIndex + i);
 
-                data.removeAt(oldDataIndex + i);
+           //     data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
             } else if (hiddenChildren) {
               for (let i = 1; i <= hiddenChildren.length; i++) {
                 let child = data.objectAt(oldDataIndex + i);
 
-                data.removeAt(oldDataIndex + i);
+            //    data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
             }
@@ -762,6 +768,7 @@ export default Ember.Component.extend({
             if (this && !this.get('isDestroyed')) {
               if (up) {
                 // drag up
+                /*
                 let target;
 
                 if (children) {
@@ -778,10 +785,54 @@ export default Ember.Component.extend({
                 target.animate({
                   height: `${clientHeight}px`,
                   opacity: 1
-                }, 500, function() {
+                }, ANIMATE_SPEED, function() {
                   target.css('height', '');
                   target.css('opacity', '');
                 });
+*/
+
+                let target, orig;
+
+                if (children) {
+                  orig = this.$('.droppable:gt(' + (oldIndex + 1) + '):lt(' + (children.length + 1) +')');
+                  target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
+                } else {
+                  orig = this.$('.droppable:eq(' + (oldIndex + 1) + ')');
+                  target = this.$('.droppable:eq(' + (newIndex) + ')');
+                }
+
+                orig.animate({
+                  height: '0px'
+                }, ANIMATE_SPEED, () => {
+                  // note, this fires for every el animated out, which will take care of each of the children
+                  data.removeAt(oldDataIndex + 1);
+                  Ember.run.next( () => {
+                    orig.css('height', '');
+                  });
+
+                  // hidden children aren't shown, so they don't animate out, we've added them down, now need
+                  // to remove the old references
+                  if (hiddenChildren && hiddenChildren.length) {
+                    for (let i = 0; i < hiddenChildren.length; i++) {
+                      data.removeAt(oldDataIndex);
+                    }
+
+                  }
+                });
+
+                target.css('height', '0px');
+                target.css('opacity', '0.4');
+
+                // animate new one in
+                target.animate({
+                  height: `${clientHeight}px`,
+                  opacity: 1
+                }, ANIMATE_SPEED, function() {
+                  target.css('height', '');
+                  target.css('opacity', '');
+                });
+
+
               } else {
                 // drag down
                 let target, orig;
@@ -802,7 +853,7 @@ export default Ember.Component.extend({
                   // animate original out
                   orig.animate({
                     height: '0px'
-                  }, 500, () => {
+                  }, ANIMATE_SPEED, () => {
                     // note, this fires for every el animated out, which will take care of each of the children
                     data.removeAt(oldDataIndex);
                     Ember.run.next( () => {
@@ -828,7 +879,7 @@ export default Ember.Component.extend({
                 target.animate({
                   height: `${clientHeight}px`,
                   opacity: 1
-                }, 500, function() {
+                }, ANIMATE_SPEED, function() {
                   target.css('height', '');
                   target.css('opacity', '');
                 });
