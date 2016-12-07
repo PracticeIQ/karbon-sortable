@@ -490,9 +490,14 @@ export default Ember.Component.extend({
 
             if (!mySectionItem) {
               // We dragged over an item that is not in a section, only possible if the item is
-              // above all sections. Not allowed to drop, don't set borders
+              // above all sections. In this case you are only allowed to drop above the orphans,
+              // put the border on top.
 
-//              this._itemBorders(droppable, event);
+              const first = this.$('.droppable:eq(0)');
+              this.set('_lastSectionNode', first);
+
+              this._applyClasses(first, ['droppable--below'], ['droppable--above']);
+
               return;
             }
 
@@ -649,9 +654,17 @@ export default Ember.Component.extend({
 
             if (!mySectionItem) {
               // we're dropping on an item that is not in a section, so it must
-              // be above all sections. Not legal, ignore.
+              // be above all sections. We only allow dropping on top of the list
+              // of orphans.
 
-              return;
+              newIndex = 0;
+              newDataIndex = 0;
+
+              const node = this.get('_lastSectionNode');
+              if (node) {
+                this._applyClasses(node, ['droppable--above'], null);
+              }
+
             } else {
 
               const mySectionId = mySectionItem.get('id');
