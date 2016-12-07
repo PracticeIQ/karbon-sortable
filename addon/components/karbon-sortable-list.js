@@ -246,13 +246,14 @@ export default Ember.Component.extend({
       event.dataTransfer.dropEffect = 'move';
 
       this.set('_draggedEl', event.target);
+      const dataItem = this._itemForNode(event.target);
+      this.set('_draggedItem', dataItem);
+
       if (this.get('nestingAllowed')) {
         this.set('_dragGroup', null);
 
-        const dataItem = this._itemForNode(event.target);
         const isSection = dataItem.get('isSection');
 
-        this.set('_draggedItem', dataItem);
         this.set('_isSection', isSection);
 
         if (isSection) {
@@ -569,7 +570,8 @@ export default Ember.Component.extend({
         let newIndex = Ember.$(droppable).index();
 
         const up = oldIndex > newIndex;
-        const isSection = draggedDataItem.get('isSection');
+//        const isSection = draggedDataItem.get('isSection');
+        const isSection = this.get('_isSection');
         let isChild = draggedDataItem.get('isChild');
 
         if (!isSection) {
