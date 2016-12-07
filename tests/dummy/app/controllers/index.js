@@ -36,6 +36,10 @@ export default Ember.Controller.extend({
 
     dropOnWell: function(wellId, itemId) {
       console.log('wellId: ', wellId, ' itemId: ', itemId);
+    },
+
+    dragged: function(evt) {
+      console.log('drag: ', evt);
     }
   }
 });

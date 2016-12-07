@@ -6,11 +6,11 @@ export default Ember.Component.extend({
   classNames: ['dropwell'],
   classNameBindings: ['dragover'],
   dragover: false,
-  disable: function() {
+  disable: Ember.computed('selected', function() {
     const selected = this.get('selected');
 
     return selected === this.get('data');
-  }.property('selected'),
+  }),
 
   didInsertElement() {
     this.$().on('dragenter.karbondropwell', (event) => {

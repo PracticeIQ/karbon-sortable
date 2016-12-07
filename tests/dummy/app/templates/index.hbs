@@ -16,6 +16,7 @@
 {{#karbon-sortable-list data=model
                         canNest=true
                         containerClass='demo-list'
+                        dragged=(action 'dragged')
                         onOrderChanged=(action 'orderChanged') }}
   {{#each model as |item|}}
     {{#unless item.isCollapsedSectionChild}}
