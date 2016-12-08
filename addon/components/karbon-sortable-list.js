@@ -17,7 +17,7 @@ export default Ember.Component.extend({
   canNest: false,
   // how many pixels do you have to drag horizontally to indent/outdent
   nestTolerance: 60,
-  animateSpeed: 5000,
+  animateSpeed: 500,
 
   // The DOM element being dragged
   _draggedEl: null,
@@ -754,7 +754,7 @@ export default Ember.Component.extend({
 
             if (children && children.length) {
               for (let i = 1; i <= children.length; i++) {
-                let child = data.objectAt(oldDataIndex + i + 1);
+                let child = data.objectAt(oldDataIndex + (2 * i));
 
                 data.insertAt(newDataIndex + i, child);
               }
@@ -808,7 +808,7 @@ export default Ember.Component.extend({
                   height: '0px'
                 }, ANIMATE_SPEED, () => {
                   // note, this fires for every el animated out, which will take care of each of the children
-                  data.removeAt(oldDataIndex + children.length);
+                  data.removeAt(oldDataIndex + 1 + children.length);
                   Ember.run.next( () => {
                     orig.css('height', '');
                   });
