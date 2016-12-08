@@ -191,8 +191,8 @@ export default Ember.Component.extend({
 
   // applies borders above or below the droppable based on the 50/50 rule
   _itemBorders: function (droppable, event) {
-    const height = event.target.clientTop + event.target.clientHeight;
     const next = Ember.$(droppable).next();
+    const height = Ember.$(droppable).height();
 
     if (event.originalEvent.offsetY < (height / 2)) {
       this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
