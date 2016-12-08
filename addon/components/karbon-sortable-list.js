@@ -430,6 +430,7 @@ export default Ember.Component.extend({
         const index = this.get('data').indexOf(dropItem);
         const isSame = (index === draggedIndex);
         const isSection = this.get('_isSection');
+        const isDragging = Ember.$(droppable).hasClass('dragging');
         const up = index < draggedIndex;
 
         const isPinned = this.get('_isPinned');
@@ -447,7 +448,7 @@ export default Ember.Component.extend({
 
         this.set('_isSame', isSame);
 
-        if (!isSame && !isSection) {
+        if (!isSame && !isSection && !isDragging) {
           // check/flip the borders
 
           let classList = droppable.attr('class');
