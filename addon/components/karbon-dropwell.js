@@ -5,6 +5,7 @@ import layout from '../templates/components/karbon-dropwell';
 export default Ember.Component.extend({
   classNames: ['dropwell'],
   classNameBindings: ['dragover'],
+  layout: layout,
   dragover: false,
   disable: Ember.computed('selected', function() {
     const selected = this.get('selected');
@@ -13,7 +14,7 @@ export default Ember.Component.extend({
   }),
 
   didInsertElement() {
-    this.$().on('dragenter.karbondropwell', (event) => {
+    this.$().on('dragenter.karbondropwell', () => {
       if (!this.get('disable')) {
         this.set('dragover', true);
       }
@@ -27,7 +28,7 @@ export default Ember.Component.extend({
       }
     });
 
-    this.$().on('dragleave.karbondropwell', (event) => {
+    this.$().on('dragleave.karbondropwell', () => {
       if (!this.get('disable')) {
         this.set('dragover', false);
       }

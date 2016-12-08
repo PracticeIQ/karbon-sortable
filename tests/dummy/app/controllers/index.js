@@ -20,7 +20,9 @@ export default Ember.Controller.extend({
       let index = model.indexOf(item) + 1;
 
       // Nothing to do if we're at the bottom with no children
-      if (index === listSize) return;
+      if (index === listSize) {
+        return;
+      }
 
       let child = model.objectAt(index);
 
@@ -28,7 +30,9 @@ export default Ember.Controller.extend({
         child.set('isCollapsedSectionChild', !isCollapsed);
 
         index++;
-        if (index < listSize) child = model.objectAt(index);
+        if (index < listSize) {
+          child = model.objectAt(index);
+        }
       }
 
       item.set('sectionIsCollapsed', !isCollapsed);

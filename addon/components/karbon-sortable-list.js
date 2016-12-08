@@ -246,14 +246,18 @@ export default Ember.Component.extend({
     const data = this.get('data');
     const myIndex = data.indexOf(dataItem);
 
-    if (myIndex === 0) return true;
+    if (myIndex === 0) {
+      return true;
+    }
 
     const mySection = this._getSectionItem(dataItem);
 
     if (mySection) {
       const sectionIndex = data.indexOf(mySection);
 
-      if (myIndex === (sectionIndex + 1)) return true;
+      if (myIndex === (sectionIndex + 1)) {
+        return true;
+      }
     }
 
     return false;
