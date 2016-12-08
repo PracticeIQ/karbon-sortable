@@ -4,7 +4,7 @@ import layout from '../templates/components/karbon-sortable-list';
 /**
  * A container for sortable items. Items within the list can be sorted via
  * dragging and dropping them into a new position. You can also identify
- * external drop targets for non-sorting actions.
+ * external drop targets for non-sorting actions using a dropwell.
  */
 
 export default Ember.Component.extend({
@@ -162,7 +162,8 @@ export default Ember.Component.extend({
 
   // Changing the class on an element initiates a re-render. Firefox in particular
   // doesn't handle it well. So rather than use addClass/removeClass, we apply
-  // the end state as a single change to the element.
+  // the end state as a single change to the element. Try not to call this more
+  // than once per render (ie method).
   _applyClasses: function(target, toRemove, toAdd) {
     let classList = target.attr('class') || '';
 
@@ -242,6 +243,7 @@ export default Ember.Component.extend({
     }
   },
 
+  // Pinned items cannot be indented
   _amIPinned: function(dataItem) {
     const data = this.get('data');
     const myIndex = data.indexOf(dataItem);
@@ -264,6 +266,7 @@ export default Ember.Component.extend({
   },
 
   didInsertElement() {
+    // --- dragstart ---
     this.$().on('dragstart.karbonsortable', (event) => {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.dropEffect = 'move';
@@ -304,6 +307,7 @@ export default Ember.Component.extend({
       event.target.classList.add('dragging');
     });
 
+    // --- dragend ---
     this.$().on('dragend.karbonsortable', (event) => {
       const ANIMATE_SPEED = this.get('animateSpeed');
 
@@ -532,6 +536,7 @@ export default Ember.Component.extend({
       }
     });
 
+    // --- dragleave ---
     this.$().on('dragleave.karbonsortable', (event) => {
       const dragged = this.get('_draggedEl');
       const draggedItem = this._itemForNode(dragged);
@@ -572,12 +577,11 @@ export default Ember.Component.extend({
     // whether we are dragging down or up, and whether the drop is above or
     // below the target.
     //
-    // The animations require similar conditions. When dragging up, we can remove
-    // and insert the data element, and after render animate the new item height.
-    // For dragging down, we have to insert the new element, then animate it in
-    // and animate the old out, then remove the data item. This means the index
-    // calculations are different in each case.
-    //
+    // The animations require similar conditions. To make the transitions smooth,
+    // we insert the new elements and give them a height of 0, then animate them
+    // in at the same time we animate the old ones out. Then we remove the old
+    // ones from the list. The index calculations are different depending on whether
+    // you are dragging up or dragging down as well.
     //
     this.$().on('drop.karbonsortable', (event) => {
       event.preventDefault();
@@ -592,7 +596,6 @@ export default Ember.Component.extend({
         const draggedDataItem = this.get('_draggedItem');
         const droppedDataItem = this._itemForNode(droppable);
 
-
         const oldDataIndex = data.indexOf(draggedDataItem);
         let newDataIndex = data.indexOf(droppedDataItem);
 
@@ -603,6 +606,10 @@ export default Ember.Component.extend({
         const isSection = this.get('_isSection');
         let isChild = draggedDataItem.get('isChild');
 
+        // -----------------------------------------
+        // Adjust the old/new indices based on what we're doing so we move and
+        // animate everything in the right place.
+        // -----------------------------------------
         if (!isSection) {
           // Because we insert above or below based on whether you are on the
           // top or bottom half of the drop target, we have to adjust the insertion
@@ -722,7 +729,9 @@ export default Ember.Component.extend({
         }
 
 
-        // move stuff around and animate
+        // -----------------------------------------
+        // Move stuff around and animate
+        // -----------------------------------------
 
         const ANIMATE_SPEED = this.get('animateSpeed');
 
@@ -739,28 +748,26 @@ export default Ember.Component.extend({
           }
 
           if (up) {
-            // If dragging up, we can remove the old and insert the new
-          //  data.removeAt(oldDataIndex);
+            // If dragging up, we insert the new, which will push all the
+            // old down
             data.insertAt(newDataIndex, draggedDataItem);
 
             if (children && children.length) {
               for (let i = 1; i <= children.length; i++) {
-                let child = data.objectAt(oldDataIndex + i);
+                let child = data.objectAt(oldDataIndex + i + 1);
 
-           //     data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
             } else if (hiddenChildren) {
               for (let i = 1; i <= hiddenChildren.length; i++) {
                 let child = data.objectAt(oldDataIndex + i);
 
-            //    data.removeAt(oldDataIndex + i);
                 data.insertAt(newDataIndex + i, child);
               }
             }
           } else {
-            // If dragging down, we can insert the new, but have to wait to
-            // remove the old until it's animated away
+            // If dragging down, we insert the new, and the old
+            // indices are unaffected because they are above
             data.insertAt(newDataIndex + 1, draggedDataItem);
 
             if (children && children.length) {
@@ -785,34 +792,11 @@ export default Ember.Component.extend({
             if (this && !this.get('isDestroyed')) {
               if (up) {
                 // drag up
-                /*
-                let target;
-
-                if (children) {
-                  let start = (newIndex) ? (newIndex - 1) : 0;
-                  target = this.$('.droppable:gt(' + start + '):lt(' + (children.length + 1) + ')');
-                } else {
-                  target = this.$('.droppable:eq(' + (newIndex) + ')');
-                }
-
-                target.css('height', '0px');
-                target.css('opacity', '0.4');
-
-                // animate in
-                target.animate({
-                  height: `${clientHeight}px`,
-                  opacity: 1
-                }, ANIMATE_SPEED, function() {
-                  target.css('height', '');
-                  target.css('opacity', '');
-                });
-*/
-
                 let target, orig;
 
                 if (children && children.length) {
-                  orig = this.$('.droppable:gt(' + (oldIndex + 1) + '):lt(' + (children.length + 1) +')');
-                  target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
+                  orig = this.$('.droppable:gt(' + (oldIndex + children.length) + '):lt(' + (children.length + 1) +')');
+                  target = this.$('.droppable:gt(' + (newIndex - 1) + '):lt(' + (children.length + 1) + ')');
                 } else {
                   orig = this.$('.droppable:eq(' + (oldIndex + 1) + ')');
                   target = this.$('.droppable:eq(' + (newIndex) + ')');
@@ -824,7 +808,7 @@ export default Ember.Component.extend({
                   height: '0px'
                 }, ANIMATE_SPEED, () => {
                   // note, this fires for every el animated out, which will take care of each of the children
-                  data.removeAt(oldDataIndex + 1);
+                  data.removeAt(oldDataIndex + children.length);
                   Ember.run.next( () => {
                     orig.css('height', '');
                   });
