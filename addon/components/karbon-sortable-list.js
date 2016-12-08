@@ -806,13 +806,15 @@ export default Ember.Component.extend({
 
                 let target, orig;
 
-                if (children) {
+                if (children && children.length) {
                   orig = this.$('.droppable:gt(' + (oldIndex + 1) + '):lt(' + (children.length + 1) +')');
                   target = this.$('.droppable:gt(' + (newIndex) + '):lt(' + (children.length + 1) + ')');
                 } else {
                   orig = this.$('.droppable:eq(' + (oldIndex + 1) + ')');
                   target = this.$('.droppable:eq(' + (newIndex) + ')');
                 }
+
+                this._applyClasses(orig, null, ['dragging']);
 
                 orig.animate({
                   height: '0px'
@@ -861,6 +863,9 @@ export default Ember.Component.extend({
                   orig = this.$('.droppable:eq(' + (oldIndex) + ')');
                   target = this.$('.droppable:eq(' + (newIndex + 1) + ')');
                 }
+
+
+                this._applyClasses(target, null, ['dragging']);
 
                 if (orig) {
                   // animate original out
