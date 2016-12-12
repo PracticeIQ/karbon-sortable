@@ -841,7 +841,7 @@ export default Ember.Component.extend({
                 // drag down
                 let target, orig;
 
-                if (children) {
+                if (children && children.length) {
                   if (oldIndex === 0) {
                     orig = this.$('.droppable:gt(' + (oldIndex) + '):lt(' + (children.length + 1) +')');
                   } else {
