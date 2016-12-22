@@ -304,7 +304,9 @@ export default Ember.Component.extend({
         // ie doesn't like setDragImage
       }
 
-      event.target.classList.add('dragging');
+      Ember.run.scheduleOnce('afterRender', () => {
+        this._applyClasses(Ember.$(event.target), null, ['dragging']);
+      });
     });
 
     // --- dragend ---
@@ -496,7 +498,7 @@ export default Ember.Component.extend({
                 this._applyClasses(sectionNode, ['droppable--below'], ['droppable--above']);
               }
             }
-          } else {
+          } else if (!isSame) {
             // we're over an item, is it in our section?
             const mySectionItem = this._getSectionItem(dropItem);
 
@@ -759,9 +761,9 @@ export default Ember.Component.extend({
 
                 data.insertAt(newDataIndex + i, child);
               }
-            } else if (hiddenChildren) {
+            } else if (hiddenChildren && hiddenChildren.length) {
               for (let i = 1; i <= hiddenChildren.length; i++) {
-                let child = data.objectAt(oldDataIndex + i);
+                let child = data.objectAt(oldDataIndex + (2 * i));
 
                 data.insertAt(newDataIndex + i, child);
               }
@@ -809,7 +811,9 @@ export default Ember.Component.extend({
                   height: '0px'
                 }, ANIMATE_SPEED, () => {
                   // note, this fires for every el animated out, which will take care of each of the children
-                  data.removeAt(oldDataIndex + 1 + children.length);
+                  const hiddenCount = (hiddenChildren) ? hiddenChildren.length : 0;
+
+                  data.removeAt(oldDataIndex + 1 + children.length + hiddenCount);
                   Ember.run.next( () => {
                     orig.css('height', '');
                   });
@@ -818,7 +822,7 @@ export default Ember.Component.extend({
                   // to remove the old references
                   if (hiddenChildren && hiddenChildren.length) {
                     for (let i = 0; i < hiddenChildren.length; i++) {
-                      data.removeAt(oldDataIndex);
+                      data.removeAt(oldDataIndex + 1 + hiddenCount);
                     }
 
                   }
