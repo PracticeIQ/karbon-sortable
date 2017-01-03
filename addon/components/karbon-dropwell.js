@@ -35,6 +35,8 @@ export default Ember.Component.extend({
     });
 
     this.$().on('drop.karbondropwell', (event) => {
+      event.preventDefault();
+
       if (!this.get('disable')) {
         this.set('dragover', false);
 
