@@ -10,7 +10,7 @@ import layout from '../templates/components/karbon-sortable-list';
 export default Ember.Component.extend({
   tagName: 'ul',
   classNames: ['karbon-sortable-list'],
-  classNameBindings: ['containerClass'],
+  classNameBindings: ['containerClass', 'invalidDragOver:karbon-sortable-list--invalid-dragover'],
 
   layout,
   // is the nesting feature enabled or not
@@ -455,7 +455,10 @@ export default Ember.Component.extend({
     this.$().on('dragover.karbonsortable', (event) => {
       const id = event.dataTransfer.getData("dragged-id");
       //Ignore items not dragged from this list.
-      if(!this._hasDragData()) return console.log('no drag item found for this list', this.get('id'));
+      if(!this._hasDragData()) {
+        this.set('invalidDragOver', true);
+        return console.log('no drag item found for this list', this.get('id'));
+      }
 
       // prevent default to allow drop
       event.preventDefault();
@@ -581,6 +584,7 @@ export default Ember.Component.extend({
 
     // --- dragleave ---
     this.$().on('dragleave.karbonsortable', (event) => {
+      this.set('invalidDragOver', false);
       const dragged = this.get('_draggedEl');
       const draggedItem = this._itemForNode(dragged);
       const draggedIndex = this.get('data').indexOf(draggedItem);
@@ -632,7 +636,10 @@ export default Ember.Component.extend({
       event.preventDefault();
 
       //Ignore items not dragged from this list.
-      if(!this._hasDragData()) return console.log('drop: no drag item found for this list');
+      if(!this._hasDragData()) {
+        this.set('invalidDragOver', false);
+        return console.log('no drag item found for this list', this.get('id'));
+      }
 
       const dragged = this.get('_draggedEl');
       const droppable = this._getDropItemFromEvent(event, dragged);
