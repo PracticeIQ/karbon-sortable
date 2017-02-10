@@ -794,10 +794,10 @@ export default Ember.Component.extend({
   },
 
   _reorderList: function (data) {
-    let {newDataIndex, oldDataIndex, childElems, hiddenChildrenData, up, draggedDataItem} = data;
+    let {newDataIndex, oldDataIndex, children, hiddenChildren, up, draggedDataItem} = data;
     const listData = this.get('data');
-    const childCount = (childElems && childElems.length || 0);
-    const hiddenChildCount = (hiddenChildrenData && hiddenChildrenData.length || 0);
+    const childCount = (children && children.length || 0);
+    const hiddenChildCount = (hiddenChildren && hiddenChildren.length || 0);
     const totalChildren = childCount + hiddenChildCount;
     const itemsToMove = listData.slice(oldDataIndex, oldDataIndex + 1 + totalChildren);
 
