@@ -42,6 +42,14 @@ ul.karbon-sortable-list {
   cursor: pointer;
 }
 
+.section {
+  margin-top: 18px;
+}
+
+.section .list-item {
+  background-color: rgb(213, 185, 142);
+}
+
 
 /*
  * The dragging class is added to the karbon-sortable-item when a
@@ -81,14 +89,6 @@ li.nested {
   background-color: green;
 }
 
-
-/*
- * When entering an item add the droppable-enter class. This is now primarily
- * a marker class to know which item we're over, rather than a visual change.
-
-.droppable--enter .list-item {
-  background-color: #6aa8cc;
-} */
 
 /*
  * Rather than change the background of the drop target, we now mark it as
@@ -137,4 +137,25 @@ li.nested {
   border-radius: 15px;
   position: absolute;
   left: -200px
+}
+
+/*
+ * Drop wells
+ */
+
+.drops {
+  display: flex;
+}
+
+.dropwell {
+  width: 120px;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin: 0 12px;
+  text-align: center;
+  background-color: #cccc33;
+}
+
+.dropwell.dragover {
+  background-color: #fefefe;
 }
