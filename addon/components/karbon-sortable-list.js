@@ -812,7 +812,7 @@ export default Ember.Component.extend({
       listData.insertAt(adjustedIndex  + index, item);
     });
 
-    this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, draggedDataItem.get('isChild'), childCount);
+    this.get('onOrderChanged')(draggedDataItem, oldDataIndex, adjustedIndex, draggedDataItem.get('isChild'), totalChildren);
   },
 
   willDestroyElement() {
