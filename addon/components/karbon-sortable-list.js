@@ -298,7 +298,7 @@ export default Ember.Component.extend({
     // --- dragstart ---
     this.$().on('dragstart.karbonsortable', (event) => {
 
-      event.dataTransfer.setData("dragged-id", event.target.id);
+      event.dataTransfer.setData("text/plain", event.target.id);
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.dropEffect = 'move';
 
@@ -453,7 +453,7 @@ export default Ember.Component.extend({
     // border management from here. Only apply rendering
     // changes if you have to (they are more expensive than the checks).
     this.$().on('dragover.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("dragged-id");
+      const id = event.dataTransfer.getData("text");
       //Ignore items not dragged from this list.
       if(!this._hasDragData()) {
         this.set('invalidDragOver', true);
@@ -631,7 +631,7 @@ export default Ember.Component.extend({
     // you are dragging up or dragging down as well.
     //
     this.$().on('drop.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("dragged-id");
+      const id = event.dataTransfer.getData("text");
 
       event.preventDefault();
 
