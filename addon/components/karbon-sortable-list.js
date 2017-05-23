@@ -298,7 +298,6 @@ export default Ember.Component.extend({
     // --- dragstart ---
     this.$().on('dragstart.karbonsortable', (event) => {
 
-      event.dataTransfer.setData("text/plain", event.target.id);
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.dropEffect = 'move';
 
