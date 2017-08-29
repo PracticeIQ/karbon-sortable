@@ -272,7 +272,8 @@ export default Ember.Component.extend({
   _clearDragData() {
     this.setProperties({
       '_draggedEl': null,
-      '_draggedItem': null
+      '_draggedItem': null,
+      '_screenX': null
     });
   },
 
@@ -421,21 +422,21 @@ export default Ember.Component.extend({
         if (this.get('nestingAllowed')) {
           // indent/outdent
           const screenX = this.get('_screenX');
-          const newScreenX = event.originalEvent.screenX;
+          const newScreenX = event.screenX;
 
           const nest = draggedEl.hasClass('nesting') || draggedEl.hasClass('nested');
 
-          if (!screenX) {
+          if (!screenX || (Math.abs(newScreenX - screenX) > 100)) {
             this.set('_screenX', newScreenX);
           } else {
             const deltaX = newScreenX - screenX;
             const nestTolerance = this.get('nestTolerance');
 
-            if (deltaX < (-1 * nestTolerance) && nest) {
+            if (nest && (deltaX < (-1 * nestTolerance))) {
               // outdent
               this._applyClasses(draggedEl, ['nesting', 'nested'], null);
               this.set('_screenX', newScreenX);
-            } else if (deltaX > nestTolerance && !nest) {
+            } else if (!nest && (deltaX > nestTolerance)) {
               // indent
               this._applyClasses(draggedEl, null, ['nesting']);
               this.set('_screenX', newScreenX);
