@@ -275,6 +275,9 @@ export default Ember.Component.extend({
       '_draggedItem': null,
       '_screenX': null
     });
+
+    const dsi = document.getElementById('dragSingleImage');
+    if (dsi) dsi.remove();
   },
 
   _hasDragData() {
@@ -328,12 +331,33 @@ export default Ember.Component.extend({
         this.set('_screenX', null);
       }
 
-      try {
-        const dragImageEl = document.getElementById('dragSingleImage');
-        const width = Ember.$(dragImageEl).width();
-        const height = Ember.$(dragImageEl).height();
 
-        event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
+      try {
+        // Chrome (and others?) changed the way they use dragSingleImage. Now
+        // we need to build the DOM record and insert it just before we set it,
+        // then remove it on drag end. Unfortunately it means we have to pull
+        // the classes in here.
+
+        const dragImageEl = document.createElement('div');
+        dragImageEl.setAttribute('id', 'dragSingleImage');
+
+        const thumbnail = document.createElement('div');
+        thumbnail.setAttribute('class', 'checklist__thumbnail');
+
+        const circle = document.createElement('div');
+        circle.setAttribute('class', 'checklist__thumbnail--circle');
+
+        const rectangle = document.createElement('div');
+        rectangle.setAttribute('class', 'checklist__thumbnail--rectangle');
+
+        thumbnail.appendChild(circle);
+        thumbnail.appendChild(rectangle);
+
+        dragImageEl.appendChild(thumbnail);
+
+        document.body.appendChild(dragImageEl);
+
+        event.dataTransfer.setDragImage(dragImageEl, Math.floor(105/2), Math.floor(23/2));
       } catch (e) {
         // ie doesn't like setDragImage
       }
