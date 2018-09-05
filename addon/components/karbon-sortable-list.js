@@ -18,6 +18,7 @@ export default Ember.Component.extend({
   // how many pixels do you have to drag horizontally to indent/outdent
   nestTolerance: 60,
   animateSpeed: 500,
+  canDropNonSectionAtTopOfList: true,
 
   // The DOM element being dragged
   _draggedEl: null,
@@ -192,14 +193,14 @@ export default Ember.Component.extend({
   },
 
   // applies borders above or below the droppable based on the 50/50 rule
-  _itemBorders: function (droppable, event) {
+  _itemBorders: function (droppable, event, preventBorderTop) {
     const next = Ember.$(droppable).next();
     const midPoint = droppable.offset().top + droppable.height() / 2;
     //As the event firing could be a nested child, we use the client offset.
     const dragPoint = event.pageY;
 
     if (dragPoint < midPoint) {
-      this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
+      if(!preventBorderTop) this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
 
       if (next) {
         next.addClass('spacer');
@@ -525,7 +526,9 @@ export default Ember.Component.extend({
           // if we get flooded with dragover events the class attr may not be set (ff),
           // skip everything and pick it up on the next cycle
           if (classList) {
-            this._itemBorders(droppable, event);
+            //Suppressing the border top when attempting to drop a non-section item at the top of the list
+            const preventBorderTop = (index === 0 && !this.get('canDropNonSectionAtTopOfList'));
+            this._itemBorders(droppable, event, preventBorderTop);
           }
         } else if (!isSame && isSection && dropItem) {
           // we're dragging a section, but we need to know what we're over
@@ -791,6 +794,9 @@ export default Ember.Component.extend({
 
         const isSame = (oldIndex === newIndex);
 
+        //Prevent dropping items at top of the list (i.e above and therefore out of sections)
+        const invalidDrop = newIndex === 0 && !isSection && !this.get('canDropNonSectionAtTopOfList');
+
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
 
@@ -810,7 +816,8 @@ export default Ember.Component.extend({
         }
 
         // Reorder the list
-        if (!isSame) this._reorderList({newDataIndex, oldDataIndex, children, hiddenChildren, up, draggedDataItem});
+        if (!isSame && !invalidDrop) this._reorderList({newDataIndex, oldDataIndex, children, hiddenChildren, up, draggedDataItem});
+
       }
     });
 
