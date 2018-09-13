@@ -10,7 +10,7 @@ import layout from '../templates/components/karbon-sortable-list';
 export default Ember.Component.extend({
   tagName: 'ul',
   classNames: ['karbon-sortable-list'],
-  classNameBindings: ['containerClass', 'invalidDragOver:karbon-sortable-list--invalid-dragover'],
+  classNameBindings: ['containerClass', 'invalidDragOver:karbon-sortable-list--invalid-dragover', '_draggedEl:karbon-sortable-list--drag-in-progress'],
 
   layout,
   // is the nesting feature enabled or not
@@ -20,6 +20,9 @@ export default Ember.Component.extend({
   animateSpeed: 500,
   canDropNonSectionAtTopOfList: true,
 
+  //Set this to true to allow items from sibling lists to be dragged in to and dropped in this list.
+  //The 'externalItemDropped' event will fire with the id of the item and its 'type' (if set).
+  allowExternallyDroppedItems: false,
   // The DOM element being dragged
   _draggedEl: null,
   _draggedItem: null,
@@ -285,6 +288,14 @@ export default Ember.Component.extend({
     return this.get('_draggedEl');
   },
 
+  _getDraggedData(event) {
+    if(!event) return;
+    const stringData = event.dataTransfer && event.dataTransfer.getData('dragData');
+    if(!stringData || !stringData.length) return;
+    const data = JSON.parse(stringData);
+    return data;
+  },
+
   _getDropItemFromEvent: function (event, dragged) {
     //To support nested sortables we need to check if the event is being fired
     //by a child list item and adjust accordingly.
@@ -308,7 +319,7 @@ export default Ember.Component.extend({
 
       const dataItem = this._itemForNode(event.target);
 
-      if(!dataItem) return console.log('dragged item not found in this list');
+      if(!dataItem) return;
 
       this.set('_draggedEl', event.target);
       this.set('_draggedItem', dataItem);
@@ -478,19 +489,25 @@ export default Ember.Component.extend({
     // border management from here. Only apply rendering
     // changes if you have to (they are more expensive than the checks).
     this.$().on('dragover.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("text");
+
+      //@NOTE: It is important to note that the dragover event does not have permission to access the drag event data we have set, so we can't
+      //check anything about the item that is dragging over us (if it is from another list). We can only access the drag data on dragStart and dragEnd events.
+
+      const externalItem = !this._hasDragData();
+      //Get the highest droppable up the tree incase we are over a nested list.
+      const dragged = this.get('_draggedEl');
+      const droppable = this._getDropItemFromEvent(event, dragged);
+      const allowExternallyDroppedItems = this.get('allowExternallyDroppedItems');
+
       //Ignore items not dragged from this list.
-      if(!this._hasDragData()) {
+      if (externalItem && !allowExternallyDroppedItems) {
         this.set('invalidDragOver', true);
-        return console.log('no drag item found for this list', this.get('id'));
+        return;
       }
 
       // prevent default to allow drop
       event.preventDefault();
 
-      //Get the highest droppable up the tree incase we are over a nested list.
-      const dragged = this.get('_draggedEl');
-      const droppable = this._getDropItemFromEvent(event, dragged);
 
       // Make sure we got one, in case they were able to drop somewhere else
       if (droppable.length === 1) {
@@ -658,18 +675,26 @@ export default Ember.Component.extend({
     // you are dragging up or dragging down as well.
     //
     this.$().on('drop.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("text");
+      const externalItem = !this._hasDragData();
+      const dragged = this.get('_draggedEl');
+      const droppable = this._getDropItemFromEvent(event, dragged);
+      const droppedItemData = this._getDraggedData(event);
+      const allowExternallyDroppedItems = this.get('allowExternallyDroppedItems');
+
+
+      //Fire the drop externalItemDropped if we are dropping an item form another list
+      if(externalItem && allowExternallyDroppedItems) {
+        // clear the borders
+        this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
+        //Fire the drop event
+        this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, droppable && Ember.$(droppable).index(), event);
+      } else if (externalItem) {
+        this.set('invalidDragOver', true);
+        return;
+      }
 
       event.preventDefault();
 
-      //Ignore items not dragged from this list.
-      if(!this._hasDragData()) {
-        this.set('invalidDragOver', false);
-        return console.log('no drag item found for this list', this.get('id'));
-      }
-
-      const dragged = this.get('_draggedEl');
-      const droppable = this._getDropItemFromEvent(event, dragged);
 
       if (droppable.length === 1) {
         const clientHeight = Ember.$(droppable).height();
