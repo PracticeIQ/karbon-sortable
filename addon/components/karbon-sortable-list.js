@@ -217,6 +217,15 @@ export default Ember.Component.extend({
     }
   },
 
+  _isDroppingDownwards: function (droppable, event) {
+    //Checks the 50 / 50 rule and adjust the drop index.
+    const next = Ember.$(droppable).next();
+    const midPoint = droppable.offset().top + droppable.height() / 2;
+    //As the event firing could be a nested child, we use the client offset.
+    const dragPoint = event.pageY;
+    return (dragPoint > midPoint);
+  },
+
   nestingAllowed: Ember.computed('canNest', '_nestingEnabled', function() {
     return this.get('canNest') && this.get('_nestingEnabled');
   }),
@@ -687,7 +696,9 @@ export default Ember.Component.extend({
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
         //Fire the drop event
-        this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, droppable && Ember.$(droppable).index(), event);
+        let newDropIndex = Ember.$(droppable).index();
+        if(this._isDroppingDownwards(droppable, event)) newDropIndex++;
+        if(droppable) this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, newDropIndex, event);
       } else if (externalItem) {
         this.set('invalidDragOver', true);
         return;
