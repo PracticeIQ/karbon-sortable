@@ -696,9 +696,11 @@ export default Ember.Component.extend({
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
         //Fire the drop event
-        let newDropIndex = Ember.$(droppable).index();
-        if(this._isDroppingDownwards(droppable, event)) newDropIndex++;
-        if(droppable) this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, newDropIndex, event);
+        let dropIndex = Ember.$(droppable).index();
+        //Sometimes we want to know the index dropped on, other times the new location index.
+        let newIndex = dropIndex;
+        if(this._isDroppingDownwards(droppable, event)) newIndex++;
+        if(droppable) this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, dropIndex, newIndex, event);
       } else if (externalItem) {
         this.set('invalidDragOver', true);
         return;
