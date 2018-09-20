@@ -245,7 +245,7 @@ export default Ember.Component.extend({
       this.set('_dragGroup', null);
       this.set('_nestingEnabled', true);
     } else {
-      let children = this._getChildren(el);
+      let children = this._getChildren(el) || [];
 
       // We are dragging a group, so normal nesting rules do not apply
       this.set('_nestingEnabled', false);
