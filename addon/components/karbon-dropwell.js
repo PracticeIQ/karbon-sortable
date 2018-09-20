@@ -40,8 +40,10 @@ export default Ember.Component.extend({
       if (!this.get('disable')) {
         this.set('dragover', false);
 
-        const dropWellId = this.get('data');
-        const droppedItemId = event.dataTransfer.getData('text');
+        const stringData = event.dataTransfer && event.dataTransfer.getData('dragData');
+        if(!stringData || !stringData.length) return;
+        const data = JSON.parse(stringData);
+        const droppedItemId = data && data.pkid;
 
         this.get('onDropOnWell')(dropWellId, droppedItemId);
       }

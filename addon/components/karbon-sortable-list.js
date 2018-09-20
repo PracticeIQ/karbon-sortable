@@ -10,7 +10,7 @@ import layout from '../templates/components/karbon-sortable-list';
 export default Ember.Component.extend({
   tagName: 'ul',
   classNames: ['karbon-sortable-list'],
-  classNameBindings: ['containerClass', 'invalidDragOver:karbon-sortable-list--invalid-dragover'],
+  classNameBindings: ['containerClass', 'invalidDragOver:karbon-sortable-list--invalid-dragover', '_draggedEl:karbon-sortable-list--drag-in-progress'],
 
   layout,
   // is the nesting feature enabled or not
@@ -18,7 +18,11 @@ export default Ember.Component.extend({
   // how many pixels do you have to drag horizontally to indent/outdent
   nestTolerance: 60,
   animateSpeed: 500,
+  canDropNonSectionAtTopOfList: true,
 
+  //Set this to true to allow items from sibling lists to be dragged in to and dropped in this list.
+  //The 'externalItemDropped' event will fire with the id of the item and its 'type' (if set).
+  allowExternallyDroppedItems: false,
   // The DOM element being dragged
   _draggedEl: null,
   _draggedItem: null,
@@ -192,14 +196,14 @@ export default Ember.Component.extend({
   },
 
   // applies borders above or below the droppable based on the 50/50 rule
-  _itemBorders: function (droppable, event) {
+  _itemBorders: function (droppable, event, preventBorderTop) {
     const next = Ember.$(droppable).next();
     const midPoint = droppable.offset().top + droppable.height() / 2;
     //As the event firing could be a nested child, we use the client offset.
     const dragPoint = event.pageY;
 
     if (dragPoint < midPoint) {
-      this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
+      if(!preventBorderTop) this._applyClasses(droppable, ['droppable--below'], ['droppable--above']);
 
       if (next) {
         next.addClass('spacer');
@@ -211,6 +215,15 @@ export default Ember.Component.extend({
         next.removeClass('spacer');
       }
     }
+  },
+
+  _isDroppingDownwards: function (droppable, event) {
+    //Checks the 50 / 50 rule and adjust the drop index.
+    const next = Ember.$(droppable).next();
+    const midPoint = droppable.offset().top + droppable.height() / 2;
+    //As the event firing could be a nested child, we use the client offset.
+    const dragPoint = event.pageY;
+    return (dragPoint > midPoint);
   },
 
   nestingAllowed: Ember.computed('canNest', '_nestingEnabled', function() {
@@ -232,7 +245,7 @@ export default Ember.Component.extend({
       this.set('_dragGroup', null);
       this.set('_nestingEnabled', true);
     } else {
-      let children = this._getChildren(el);
+      let children = this._getChildren(el) || [];
 
       // We are dragging a group, so normal nesting rules do not apply
       this.set('_nestingEnabled', false);
@@ -272,12 +285,24 @@ export default Ember.Component.extend({
   _clearDragData() {
     this.setProperties({
       '_draggedEl': null,
-      '_draggedItem': null
+      '_draggedItem': null,
+      '_screenX': null
     });
+
+    const dsi = document.getElementById('dragSingleImage');
+    if (dsi) dsi.remove();
   },
 
   _hasDragData() {
     return this.get('_draggedEl');
+  },
+
+  _getDraggedData(event) {
+    if(!event) return;
+    const stringData = event.dataTransfer && event.dataTransfer.getData('dragData');
+    if(!stringData || !stringData.length) return;
+    const data = JSON.parse(stringData);
+    return data;
   },
 
   _getDropItemFromEvent: function (event, dragged) {
@@ -303,7 +328,7 @@ export default Ember.Component.extend({
 
       const dataItem = this._itemForNode(event.target);
 
-      if(!dataItem) return console.log('dragged item not found in this list');
+      if(!dataItem) return;
 
       this.set('_draggedEl', event.target);
       this.set('_draggedItem', dataItem);
@@ -327,12 +352,33 @@ export default Ember.Component.extend({
         this.set('_screenX', null);
       }
 
-      try {
-        const dragImageEl = document.getElementById('dragSingleImage');
-        const width = Ember.$(dragImageEl).width();
-        const height = Ember.$(dragImageEl).height();
 
-        event.dataTransfer.setDragImage(dragImageEl, Math.floor(width/2), Math.floor(height/2));
+      try {
+        // Chrome (and others?) changed the way they use dragSingleImage. Now
+        // we need to build the DOM record and insert it just before we set it,
+        // then remove it on drag end. Unfortunately it means we have to pull
+        // the classes in here.
+
+        const dragImageEl = document.createElement('div');
+        dragImageEl.setAttribute('id', 'dragSingleImage');
+
+        const thumbnail = document.createElement('div');
+        thumbnail.setAttribute('class', 'checklist__thumbnail');
+
+        const circle = document.createElement('div');
+        circle.setAttribute('class', 'checklist__thumbnail--circle');
+
+        const rectangle = document.createElement('div');
+        rectangle.setAttribute('class', 'checklist__thumbnail--rectangle');
+
+        thumbnail.appendChild(circle);
+        thumbnail.appendChild(rectangle);
+
+        dragImageEl.appendChild(thumbnail);
+
+        document.body.appendChild(dragImageEl);
+
+        event.dataTransfer.setDragImage(dragImageEl, Math.floor(105/2), Math.floor(23/2));
       } catch (e) {
         // ie doesn't like setDragImage
       }
@@ -421,21 +467,21 @@ export default Ember.Component.extend({
         if (this.get('nestingAllowed')) {
           // indent/outdent
           const screenX = this.get('_screenX');
-          const newScreenX = event.originalEvent.screenX;
+          const newScreenX = event.screenX;
 
           const nest = draggedEl.hasClass('nesting') || draggedEl.hasClass('nested');
 
-          if (!screenX) {
+          if (!screenX || (Math.abs(newScreenX - screenX) > 100)) {
             this.set('_screenX', newScreenX);
           } else {
             const deltaX = newScreenX - screenX;
             const nestTolerance = this.get('nestTolerance');
 
-            if (deltaX < (-1 * nestTolerance) && nest) {
+            if (nest && (deltaX < (-1 * nestTolerance))) {
               // outdent
               this._applyClasses(draggedEl, ['nesting', 'nested'], null);
               this.set('_screenX', newScreenX);
-            } else if (deltaX > nestTolerance && !nest) {
+            } else if (!nest && (deltaX > nestTolerance)) {
               // indent
               this._applyClasses(draggedEl, null, ['nesting']);
               this.set('_screenX', newScreenX);
@@ -452,19 +498,25 @@ export default Ember.Component.extend({
     // border management from here. Only apply rendering
     // changes if you have to (they are more expensive than the checks).
     this.$().on('dragover.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("text");
+
+      //@NOTE: It is important to note that the dragover event does not have permission to access the drag event data we have set, so we can't
+      //check anything about the item that is dragging over us (if it is from another list). We can only access the drag data on dragStart and dragEnd events.
+
+      const externalItem = !this._hasDragData();
+      //Get the highest droppable up the tree incase we are over a nested list.
+      const dragged = this.get('_draggedEl');
+      const droppable = this._getDropItemFromEvent(event, dragged);
+      const allowExternallyDroppedItems = this.get('allowExternallyDroppedItems');
+
       //Ignore items not dragged from this list.
-      if(!this._hasDragData()) {
+      if (externalItem && !allowExternallyDroppedItems) {
         this.set('invalidDragOver', true);
-        return console.log('no drag item found for this list', this.get('id'));
+        return;
       }
 
       // prevent default to allow drop
       event.preventDefault();
 
-      //Get the highest droppable up the tree incase we are over a nested list.
-      const dragged = this.get('_draggedEl');
-      const droppable = this._getDropItemFromEvent(event, dragged);
 
       // Make sure we got one, in case they were able to drop somewhere else
       if (droppable.length === 1) {
@@ -500,7 +552,9 @@ export default Ember.Component.extend({
           // if we get flooded with dragover events the class attr may not be set (ff),
           // skip everything and pick it up on the next cycle
           if (classList) {
-            this._itemBorders(droppable, event);
+            //Suppressing the border top when attempting to drop a non-section item at the top of the list
+            const preventBorderTop = (index === 0 && !this.get('canDropNonSectionAtTopOfList'));
+            this._itemBorders(droppable, event, preventBorderTop);
           }
         } else if (!isSame && isSection && dropItem) {
           // we're dragging a section, but we need to know what we're over
@@ -630,18 +684,30 @@ export default Ember.Component.extend({
     // you are dragging up or dragging down as well.
     //
     this.$().on('drop.karbonsortable', (event) => {
-      const id = event.dataTransfer.getData("text");
+      const externalItem = !this._hasDragData();
+      const dragged = this.get('_draggedEl');
+      const droppable = this._getDropItemFromEvent(event, dragged);
+      const droppedItemData = this._getDraggedData(event);
+      const allowExternallyDroppedItems = this.get('allowExternallyDroppedItems');
+
+
+      //Fire the drop externalItemDropped if we are dropping an item form another list
+      if(externalItem && allowExternallyDroppedItems) {
+        // clear the borders
+        this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
+        //Fire the drop event
+        let dropIndex = Ember.$(droppable).index();
+        //Sometimes we want to know the index dropped on, other times the new location index.
+        let newIndex = dropIndex;
+        if(this._isDroppingDownwards(droppable, event)) newIndex++;
+        if(droppable) this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, dropIndex, newIndex, event);
+      } else if (externalItem) {
+        this.set('invalidDragOver', true);
+        return;
+      }
 
       event.preventDefault();
 
-      //Ignore items not dragged from this list.
-      if(!this._hasDragData()) {
-        this.set('invalidDragOver', false);
-        return console.log('no drag item found for this list', this.get('id'));
-      }
-
-      const dragged = this.get('_draggedEl');
-      const droppable = this._getDropItemFromEvent(event, dragged);
 
       if (droppable.length === 1) {
         const clientHeight = Ember.$(droppable).height();
@@ -766,6 +832,9 @@ export default Ember.Component.extend({
 
         const isSame = (oldIndex === newIndex);
 
+        //Prevent dropping items at top of the list (i.e above and therefore out of sections)
+        const invalidDrop = newIndex === 0 && !isSection && !this.get('canDropNonSectionAtTopOfList');
+
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
 
@@ -785,7 +854,8 @@ export default Ember.Component.extend({
         }
 
         // Reorder the list
-        if (!isSame) this._reorderList({newDataIndex, oldDataIndex, children, hiddenChildren, up, draggedDataItem});
+        if (!isSame && !invalidDrop) this._reorderList({newDataIndex, oldDataIndex, children, hiddenChildren, up, draggedDataItem});
+
       }
     });
 
