@@ -684,6 +684,7 @@ export default Ember.Component.extend({
     // you are dragging up or dragging down as well.
     //
     this.$().on('drop.karbonsortable', (event) => {
+      this.set('invalidDragOver', false);
       const externalItem = !this._hasDragData();
       const dragged = this.get('_draggedEl');
       const droppable = this._getDropItemFromEvent(event, dragged);
@@ -691,7 +692,7 @@ export default Ember.Component.extend({
       const allowExternallyDroppedItems = this.get('allowExternallyDroppedItems');
 
 
-      //Fire the drop externalItemDropped if we are dropping an item form another list
+      //Fire the drop externalItemDropped if we are dropping an item from another list
       if(externalItem && allowExternallyDroppedItems) {
         // clear the borders
         this._applyClasses(droppable, ['droppable--above', 'droppable--below'], ['spacer']);
@@ -702,7 +703,6 @@ export default Ember.Component.extend({
         if(this._isDroppingDownwards(droppable, event)) newIndex++;
         if(droppable) this.get('externalItemDropped') && this.get('externalItemDropped')(droppedItemData, dropIndex, newIndex, event);
       } else if (externalItem) {
-        this.set('invalidDragOver', true);
         return;
       }
 
