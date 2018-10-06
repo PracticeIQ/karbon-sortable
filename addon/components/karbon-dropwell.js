@@ -44,6 +44,7 @@ export default Ember.Component.extend({
         if(!stringData || !stringData.length) return;
         const data = JSON.parse(stringData);
         const droppedItemId = data && data.pkid;
+        const dropWellId = this.get('data');
 
         this.get('onDropOnWell')(dropWellId, droppedItemId);
       }
